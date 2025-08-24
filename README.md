@@ -113,20 +113,25 @@
 <p> Public → http://localhost:5173
 <p> Admin → http://localhost:5173/admin
 
-### 2. 🌐 Deploy on Vercel
+### 2. 🚀 Deploy on Render
 
-* Fork this repository.
-  
-* Import it into [Vercel](https://vercel.com).
-  
-* Add environment variables (if needed).
-  
-* Deploy → your app is live instantly.
-  
+You can deploy **Lynx** on [Render](https://render.com) in a few steps:
 
-### 3. 🚢 Deploy with Docker
+0. Fork this repo
+1. Go to **Render Dashboard → New → Web Service**
+2. Connect **GitHub repo (Lynx)**
+3. Set the following commands:
+   - **Build Command**
+     ```bash
+     bun install && bun run build && cd server && bun install
+     ```
+   - **Start Command**
+     ```bash
+     bun run start
+     ```
+4. Click **Create Web Service** and wait for the deployment ✨
 
-`docker build -t lynx-standalone .docker run -p 3001:3001 -v lynx-data:/app/server lynx-standalone`
+Your app will be available at a URL like:  
 
 * * *
 
