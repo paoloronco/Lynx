@@ -1,222 +1,147 @@
-# Lynx - Personal Link Hub
+# Lynx
 
-A beautiful, highly customizable link-in-bio application that you can deploy anywhere. 
-Perfect for creators, entrepreneurs, and professionals who want to share their important links in one elegant place.
+### Your personal links hub
+
+[![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)](https://github.com/paoloronco/Lynx)
+
+**Lynx** is an open-source, self-hosted link manager that helps you gather all your digital touchpoints in a single page, with secure authentication and a fully customizable design.
+
+* * *
 
 ## ✨ Features
 
-#### 🎨 **Advanced Customization**
+* 🗂 **Standalone** → no Firebase, Supabase, or external DBs
+* 🗄 **SQLite Database** → self-contained, file-based storage
+* 🔐 **Secure Authentication** → bcryptjs password hashing + JWT tokens
+* 🛠 **Admin Panel** → manage links, themes, profile, and settings
+* 🎨 **Full Customization** → themes, colors, fonts, and layouts
+* 🚀 **Deploy Anywhere** → Vercel, Docker, Linux server, Heroku
 
-- **Complete Theme Control**: Customize colors, gradients, typography, and layout
-- **Visual Theme Editor**: Real-time preview with intuitive color pickers and sliders
-- **Multiple Font Options**: Choose from 9+ professional font families
-- **Responsive Design**: Optimized for all devices and screen sizes
-- **Export/Import Themes**: Save and share your custom themes as JSON files
+* * *
 
-#### 🔗 **Flexible Link Management**
+### 🔒 Security Features
 
-- **Multiple Link Types**: Regular links and text cards with clickable items
-- **Custom Icons**: Support for emojis, SVG, and image uploads
-- **Individual Link Styling**: Custom colors and sizes for each link
-- **Drag & Drop Reordering**: Intuitive link organization
-- **Link Descriptions**: Add context to your links
+* Password Hashing: bcryptjs (12 salt rounds)
+* JWT Authentication: signed tokens (7-day expiry)
+* Database Safety: parameterized queries against SQLite
+* Session Security: cookies set HttpOnly and SameSite
 
-#### 👤 **Profile Customization**
+* * *
 
-- **Profile Picture Upload**: Custom avatar support
-- **Rich Bio Section**: Tell your story with formatted text
-- **Social Media Integration**: Built-in social link support
-- **Dynamic Content**: Update profile information in real-time
+## 📝 Next Steps & ToDo
 
-#### 🔐 **Enterprise-Grade Security**
+### Admin → Links
 
-- **Secure Authentication**: PBKDF2 password hashing with salt
-- **Session Management**: 12-hour secure sessions with auto-expiry
-- **Strong Password Requirements**: Enforced password complexity
-- **Database Integration**: Supabase backend for secure data storage
-- **First-Time Setup**: Guided initial configuration
+* [ ] Fix background color, text color, emoji/icon, and size options → currently not working.
+* [ ] Fix the **Text Card**:
+  * cannot be deleted
+  * “Additional text content” is not saved or displayed
+  * same styling problems as normal cards
 
-### 🎯 **Professional Features**
+### Admin → Theme
 
-- **Admin Dashboard**: Comprehensive management interface
-- **Password Management**: Change credentials securely
-- **Data Persistence**: Automatic saving with localStorage fallback
-- **SEO Optimized**: Clean URLs and meta tags
-- **Analytics Ready**: Easy integration with tracking services
+* [ ] Improve the theme system:
+  * themes can be customized but still have bugs
+  * changes currently apply only to the public page → they should also update the admin interface
+
+### Admin → Profile
+
+* [ ] If the bio is empty, hide it automatically and adjust the profile card layout so it doesn’t leave blank space.
+
+### Admin → Reset
+
+* [ ] Rename the button **“Reset Authentication”** to simply **“Reset”**.
+* [ ] Make the reset button fully reset the application:
+  * clear account
+  * clear links
+  * clear profile
+  * clear themes
+  * bring the app back to the initial installation state
+
+* * *
+
+## 🛠 Tech Stack
+
+![Node.js](https://img.shields.io/badge/Node.js-339933?style=for-the-badge&logo=nodedotjs&logoColor=white)  
+![Express.js](https://img.shields.io/badge/Express.js-000000?style=for-the-badge&logo=express&logoColor=white)  
+![SQLite](https://img.shields.io/badge/SQLite-07405E?style=for-the-badge&logo=sqlite&logoColor=white)  
+![React](https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)  
+![Vite](https://img.shields.io/badge/Vite-646CFF?style=for-the-badge&logo=vite&logoColor=white)  
+![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-38B2AC?style=for-the-badge&logo=tailwindcss&logoColor=white)  
+
+* * *
+
+## 📸 Screenshots
+
+![Public Page](./docs/screenshots/01-public-page.png)  
+*Public page displaying profile and all links.*
+
+![Public Page Mobile](./docs/screenshots/01-public-page-mobile.png)  
+*Public page mobile view.*
+
+![Admin Setup](./docs/screenshots/02-admin-setup.png)  
+*Initial setup screen to create the admin password.*
+
+![Admin Profile](./docs/screenshots/03-admin-profile.png)  
+*Admin profile section to edit name and bio.*
+
+![Admin Links](./docs/screenshots/04-admin-links.png)  
+*Admin links manager to add, edit, and organize links or text cards.*
+
+![Admin Theme](./docs/screenshots/05-admin-theme.png)  
+*Theme customizer for colors, layout, and styles.*
+
+![Admin Password](./docs/screenshots/06-admin-password.png)  
+*Password & security panel with change password and reset options.*
+
+* * *
 
 ## 🚀 Quick Start
 
-### Prerequisites
+### 1. Clone, Install & Run
 
-- Node.js 18+ or Bun
-- A Supabase account (for database features)
+*(prerequisite: Node.js 18+)*
 
-###  Installation
+    git clone https://github.com/paoloronco/Lynx.git
+    cd Lynx
+    npm ci
+    cd server
+    npm ci
+    cd ..
+    npm start
 
-1. **Clone the repository**
-   
-   ```bash
-   git clone <your-repo-url>
-   cd lynx
-   ```
+<p> Public → http://localhost:5173
+<p> Admin → http://localhost:5173/admin
 
-2. **Install dependencies**
-   
-   ```bash
-   npm install
-   # or
-   bun install
-   ```
+### 2. 🌐 Deploy on Vercel
 
-3. **Set up environment variables**
-   
-   ```bash
-   cp .env.example .env.local
-   ```
-   
-   Add your Supabase credentials to `.env.local`
+* Fork this repository.
+  
+* Import it into [Vercel](https://vercel.com).
+  
+* Add environment variables (if needed).
+  
+* Deploy → your app is live instantly.
+  
 
-4. **Start development server**
-   
-   ```bash
-   npm run dev
-   # or
-   bun dev
-   ```
+### 3. 🚢 Deploy with Docker
 
-5. **Visit your app**
-   
-   - Public view: `http://localhost:5173`
-   - Admin panel: `http://localhost:5173/admin`
+`docker build -t lynx-standalone .docker run -p 3001:3001 -v lynx-data:/app/server lynx-standalone`
 
-## 🛠️ Configuration
+* * *
 
-### Initial Setup
+👨‍💻 Developed With
 
-1. Visit `/admin` for first-time setup
-2. Create your admin credentials (strong password required)
-3. Configure your profile information
-4. Add your links and customize the theme
-5. Your site is ready to share!
+* ChatGPT
+  
+* Claude
+  
+* Lovable
+  
 
-### Environment Variables
+* * *
 
-```env
-VITE_SUPABASE_URL=your_supabase_url
-VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
-```
+📜 License
 
-## 🎨 Customization Guide
-
-### Theme Customization
-
-Access the theme editor in the admin panel to customize:
-
-- **Colors**: Primary, background, text, and accent colors
-- **Gradients**: Background gradients with direction control
-- **Typography**: Font family, sizes for different elements
-- **Layout**: Card spacing, border radius, glow effects
-- **Content**: Default text and messaging
-
-### Link Types
-
-1. **Regular Links**: Standard clickable links with icons and descriptions
-2. **Text Cards**: Display multiple related links in a single card
-
-### Advanced Styling
-
-- Individual link background and text colors
-- Three size options: Small, Medium, Large
-- Custom icons via emoji, SVG, or image upload
-- Glassmorphism effects with customizable blur and glow
-
-## 🚢 Deployment
-
-### Deploy to Vercel
-
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/yourusername/lynx)
-
-1. Fork this repository
-2. Connect to Vercel
-3. Add environment variables
-4. Deploy with one click
-
-### Deploy to Netlify
-
-[![Deploy to Netlify](https://www.netlify.com/img/deploy/button.svg)](https://app.netlify.com/start/deploy?repository=https://github.com/yourusername/lynx)
-
-1. Fork this repository
-2. Connect to Netlify
-3. Add environment variables
-4. Deploy automatically
-
-### Manual Deployment
-
-```bash
-npm run build
-# Upload the 'dist' folder to your hosting provider
-```
-
-### ## 🔧 Development
-
-### Tech Stack
-
-- **Frontend**: React 18 + TypeScript
-- **Build Tool**: Vite
-- **Styling**: Tailwind CSS + shadcn/ui components
-- **Backend**: Supabase (PostgreSQL)
-- **Authentication**: Custom secure auth system
-- **State Management**: React Query + Local Storage
-- **Icons**: Lucide React
-- **Routing**: React Router DOM
-
-### Available Scripts
-
-```bash
-npm run dev          # Start development server
-npm run build        # Build for production
-npm run build:dev    # Build for development
-npm run preview      # Preview production build
-npm run lint         # Run ESLint
-```
-
-## 🔒 Security Features
-
-- **Password Hashing**: PBKDF2 with 10,000 iterations
-- **Session Security**: Secure session management with expiry
-- **Input Validation**: Comprehensive form validation
-- **XSS Protection**: Sanitized user inputs
-- **CSRF Protection**: Secure form handling
-
-## 🤝 Contributing
-
-We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) for details.
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
-
-## 📄 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## 🙏 Acknowledgments
-
-- Built with [Vite](https://vitejs.dev/) and [React](https://reactjs.org/)
-- UI components from [shadcn/ui](https://ui.shadcn.com/)
-- Icons by [Lucide](https://lucide.dev/)
-- Database by [Supabase](https://supabase.com/)
-- Originally created with [Lovable](https://lovable.dev/)
-
-## 📞 Support
-
-- 📧 Email: info@paoloronco.it
-- 🐛 Issues: [GitHub Issues](https://github.com/paoloronco/lynx/issues)
-
----
-
-**Made with ❤️ for creators and professionals who want to share their digital presence beautifully.**
-
-
+This project is licensed under the MIT License.
+Free to use, share, and modify.

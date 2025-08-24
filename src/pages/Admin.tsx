@@ -3,9 +3,9 @@ import { AdminView } from "@/components/AdminView";
 import { LoginForm } from "@/components/LoginForm";
 import { InitialSetup } from "@/components/InitialSetup";
 import { LinkData } from "@/components/LinkCard";
-import { ThemeConfig, defaultTheme, applyTheme } from "@/lib/theme";
+import { ThemeConfig, defaultTheme, applyTheme, applyAdminTheme } from "@/lib/theme";
 import { isAuthenticated, isFirstTimeSetup } from "@/lib/auth";
-import { supabase } from "@/integrations/supabase/client";
+import { profileApi, linksApi, themeApi } from "@/lib/api-client";
 import profileAvatar from "@/assets/profile-avatar.jpg";
 
 interface ProfileData {
@@ -95,10 +95,7 @@ const Admin = () => {
     const loadData = async () => {
       try {
         // Load profile data
-        const { data: profileData } = await supabase
-          .from('profile_data')
-          .select('*')
-          .single();
+        const profileData = await profileApi.get();
         
         if (profileData) {
           setProfile({
@@ -110,11 +107,7 @@ const Admin = () => {
         }
 
         // Load links data
-        const { data: linksData } = await supabase
-          .from('links')
-          .select('*')
-          .eq('is_active', true)
-          .order('sort_order');
+        const linksData = await linksApi.get();
         
         if (linksData && linksData.length > 0) {
           const formattedLinks = linksData.map(link => ({
@@ -122,30 +115,41 @@ const Admin = () => {
             title: link.title,
             description: link.description || '',
             url: link.url,
-            type: 'link' as const,
-            icon: link.icon
+            type: link.type as 'link' | 'text',
+            icon: link.icon,
+            iconType: link.iconType,
+            backgroundColor: link.backgroundColor,
+            textColor: link.textColor,
+            size: link.size,
+            content: link.content,
+            textItems: link.textItems
           }));
           setLinks(formattedLinks);
         }
 
-        // Load theme data
-        const { data: themeData } = await supabase
-          .from('theme_config')
-          .select('*')
-          .single();
+        // Load theme data (for editing purposes, but don't apply to admin interface)
+        const themeData = await themeApi.get();
         
         if (themeData) {
-          const loadedTheme = {
-            ...defaultTheme,
-            primary: themeData.primary_color,
-            background: themeData.background_color,
-            foreground: themeData.text_color
-          };
+          // If we have a full theme configuration, use it; otherwise merge with defaults
+          const loadedTheme = themeData.primary && themeData.background && themeData.foreground && !themeData.fontFamily
+            ? {
+                ...defaultTheme,
+                primary: themeData.primary,
+                background: themeData.background,
+                foreground: themeData.foreground
+              }
+            : {
+                ...defaultTheme,
+                ...themeData
+              };
           setTheme(loadedTheme);
-          applyTheme(loadedTheme);
         } else {
-          applyTheme(defaultTheme);
+          setTheme(defaultTheme);
         }
+        
+        // Always apply admin theme to maintain consistent admin styling
+        applyAdminTheme();
       } catch (error) {
         console.error('Error loading data:', error);
         applyTheme(defaultTheme);
@@ -157,23 +161,16 @@ const Admin = () => {
     }
   }, [isLoggedIn]);
 
-  // Apply theme whenever it changes
-  useEffect(() => {
-    applyTheme(theme);
-  }, [theme]);
 
   // Save data changes to database
   const saveProfile = async (newProfile: ProfileData) => {
     try {
-      await supabase
-        .from('profile_data')
-        .update({
-          name: newProfile.name,
-          bio: newProfile.bio,
-          avatar: newProfile.avatar,
-          social_links: newProfile.socialLinks || {}
-        })
-        .eq('id', (await supabase.from('profile_data').select('id').single()).data?.id);
+      await profileApi.update({
+        name: newProfile.name,
+        bio: newProfile.bio,
+        avatar: newProfile.avatar,
+        socialLinks: newProfile.socialLinks || {}
+      });
       setProfile(newProfile);
     } catch (error) {
       console.error('Error saving profile:', error);
@@ -182,20 +179,22 @@ const Admin = () => {
 
   const saveLinks = async (newLinks: LinkData[]) => {
     try {
-      // First, delete existing links
-      await supabase.from('links').delete().neq('id', '');
-      
-      // Insert new links
-      const linksToInsert = newLinks.map((link, index) => ({
+      // Format the links for the API
+      const formattedLinks = newLinks.map(link => ({
         id: link.id,
         title: link.title,
         description: link.description,
         url: link.url,
+        type: link.type || 'link',
         icon: link.icon,
-        sort_order: index
+        iconType: link.iconType,
+        backgroundColor: link.backgroundColor,
+        textColor: link.textColor,
+        size: link.size,
+        content: link.content,
+        textItems: link.textItems
       }));
-      
-      await supabase.from('links').insert(linksToInsert);
+      await linksApi.update(formattedLinks);
       setLinks(newLinks);
     } catch (error) {
       console.error('Error saving links:', error);
@@ -204,19 +203,13 @@ const Admin = () => {
 
   const saveTheme = async (newTheme: ThemeConfig) => {
     try {
-      await supabase
-        .from('theme_config')
-        .update({
-          primary_color: newTheme.primary,
-          background_color: newTheme.background,
-          text_color: newTheme.foreground,
-          button_style: 'rounded' // Store a default value
-        })
-        .eq('id', (await supabase.from('theme_config').select('id').single()).data?.id);
+      // Pass the full theme configuration to the API
+      await themeApi.update(newTheme);
       setTheme(newTheme);
-      applyTheme(newTheme);
+      // Don't apply theme to admin interface - keep admin styling consistent
     } catch (error) {
       console.error('Error saving theme:', error);
+      throw error; // Re-throw to let the component handle the error
     }
   };
 
@@ -230,7 +223,8 @@ const Admin = () => {
 
   const handleThemeChange = (newTheme: ThemeConfig) => {
     setTheme(newTheme);
-    applyTheme(newTheme);
+    // Always maintain admin theme regardless of user theme changes
+    applyAdminTheme();
   };
 
   if (isLoading) {

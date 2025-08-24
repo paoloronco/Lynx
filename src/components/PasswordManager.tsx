@@ -1,10 +1,25 @@
-import { useState } from "react";
+import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Eye, EyeOff, Key, CheckCircle, AlertTriangle, Shield } from "lucide-react";
-import { getCurrentCredentials, authenticateUser, isPasswordStrong, clearAllAuthData } from "@/lib/auth";
+import { isPasswordStrong } from "@/lib/auth";
+import { authApi } from "@/lib/api-client";
+
+type MessageType = 'success' | 'error' | 'info' | 'warning';
+
+interface Message {
+  type: MessageType;
+  text: string;
+}
+
+interface ApiResponse {
+  success: boolean;
+  message?: string;
+  error?: string;
+  token?: string;
+}
 
 export const PasswordManager = () => {
   const [currentPassword, setCurrentPassword] = useState("");
@@ -14,57 +29,163 @@ export const PasswordManager = () => {
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
-
-  const credentials = getCurrentCredentials();
+  const [message, setMessage] = useState<Message | null>(null);
+  const username = 'admin'; // Fixed admin username
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
-    setMessage(null);
-
-    try {
-      // Validate current password using the secure authentication
-      const isValid = await authenticateUser(credentials?.username || '', currentPassword);
-      if (!isValid) {
-        setMessage({ type: 'error', text: 'Current password is incorrect' });
-        setIsLoading(false);
-        return;
-      }
-
-      // Validate new password strength
-      if (!isPasswordStrong(newPassword)) {
-        setMessage({ 
-          type: 'error', 
-          text: 'Password must be at least 8 characters with uppercase, lowercase, number, and special character' 
-        });
-        setIsLoading(false);
-        return;
-      }
-
-      if (newPassword !== confirmPassword) {
-        setMessage({ type: 'error', text: 'New passwords do not match' });
-        setIsLoading(false);
-        return;
-      }
-
-      // Show warning about password change requirement
+    
+    if (newPassword !== confirmPassword) {
+      setMessage({ type: 'error', text: 'New passwords do not match' });
+      return;
+    }
+    
+    if (!isPasswordStrong(newPassword)) {
       setMessage({ 
         type: 'error', 
-        text: 'To change your password, you need to re-deploy the app with new credentials. This ensures maximum security.' 
+        text: 'Password must be at least 8 characters with minimum 1 uppercase, 1 lowercase, 1 number, and 1 special character' 
       });
+      return;
+    }
+    
+    setIsLoading(true);
+    setMessage(null);
+    
+    try {
+      console.log('Attempting to change password...');
       
-    } catch (error) {
-      setMessage({ type: 'error', text: 'Failed to validate password. Please try again.' });
+      const result = await authApi.changePassword(currentPassword, newPassword);
+      
+      if (result.success) {
+        const successMessage = result.message || 'Password changed successfully! You will be redirected to login...';
+        setMessage({ 
+          type: 'success', 
+          text: successMessage
+        });
+        
+        // Update token if a new one was returned
+        if (result.token) {
+          localStorage.setItem('lynx-auth-token', result.token);
+        }
+        
+        // Redirect to admin panel after a short delay
+        setTimeout(() => {
+          // No need to logout since the password change was successful
+          // and we already have a valid token
+          window.location.href = '/admin';
+        }, 2000);
+      } else {
+        const errorMessage = result.error || 'Failed to change password. Please try again.';
+        console.error('Password change failed:', errorMessage);
+        setMessage({ 
+          type: 'error', 
+          text: errorMessage
+        });
+      }
+    } catch (error: any) {
+      console.error('Error changing password:', error);
+      const errorMessage = error?.message || 'An error occurred while changing the password. Please try again.';
+      setMessage({ 
+        type: 'error', 
+        text: errorMessage
+      });
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleResetApp = () => {
-    if (window.confirm('This will clear all authentication data and require you to set up credentials again. Continue?')) {
+  const handleResetSuccess = () => {
+    setMessage({ 
+      type: 'success', 
+      text: 'Application reset successful. You will be redirected to setup...' 
+    });
+    
+    // Clear any existing auth data
+    authApi.logout();
+    
+    // Redirect to setup page
+    setTimeout(() => {
+      window.location.href = '/admin';
+    }, 2000);
+  };
+
+  const clearAllAuthData = () => {
+    // Clear all auth-related data from localStorage
+    localStorage.removeItem('lynx-auth-token');
+    // Add any other auth-related items that need to be cleared
+  };
+  
+  const attemptForceReset = async (): Promise<void> => {
+    try {
+      console.log('Attempting force reset...');
+      const response = await fetch('http://localhost:3001/api/auth/force-reset', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'X-Reset-Token': 'default-reset-token' // This should match your server's expected token
+        }
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || 'Failed to reset application');
+      }
+      
+      const result = await response.json();
+      
+      if (result.success) {
+        handleResetSuccess();
+      } else {
+        throw new Error(result.error || 'Failed to reset application');
+      }
+    } catch (error) {
+      console.error('Force reset failed:', error);
+      // Even if reset fails, we should still clear local data and redirect
       clearAllAuthData();
-      window.location.reload();
+      
+      // Force redirect to setup page after a delay
+      setTimeout(() => {
+        window.location.href = '/admin';
+      }, 1000);
+      
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleResetApp = async (): Promise<void> => {
+    if (!window.confirm('Are you sure you want to reset the application? This will delete all data and cannot be undone.')) {
+      return;
+    }
+    
+    setIsLoading(true);
+    setMessage(null);
+    
+    try {
+      // First try the authenticated reset
+      try {
+        console.log('Attempting authenticated reset...');
+        const result = await authApi.reset();
+        
+        if (result.success) {
+          handleResetSuccess();
+          return;
+        }
+        
+        throw new Error(result.error || 'Reset failed');
+      } catch (error) {
+        console.log('Authenticated reset failed, trying force reset...', error);
+        await attemptForceReset();
+      }
+    } catch (error: any) {
+      console.error('Reset failed:', error);
+      setMessage({ 
+        type: 'error', 
+        text: error.message || 'Failed to reset application. Please try again.' 
+      });
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -77,6 +198,10 @@ export const PasswordManager = () => {
             <Shield className="w-8 h-8 text-primary" />
           </div>
           <h2 className="text-xl font-semibold gradient-text">Security Status</h2>
+          
+          <div className="text-sm bg-primary/10 p-2 rounded-lg">
+            <p className="font-medium">Current Admin: <span className="text-primary">{username}</span></p>
+          </div>
         </div>
 
         <div className="bg-primary/10 border border-primary/20 rounded-lg p-4 space-y-2">
@@ -93,11 +218,9 @@ export const PasswordManager = () => {
           </div>
         </div>
 
-        {credentials && (
-          <div className="text-sm text-muted-foreground space-y-1">
-            <p><strong>Username:</strong> {credentials.username}</p>
-          </div>
-        )}
+        <div className="text-sm text-muted-foreground space-y-1">
+          <p><strong>Username:</strong> {username}</p>
+        </div>
       </Card>
 
       {/* Password Change Form */}
@@ -106,9 +229,9 @@ export const PasswordManager = () => {
           <div className="flex justify-center">
             <Key className="w-8 h-8 text-primary" />
           </div>
-          <h2 className="text-xl font-semibold gradient-text">Password Validation</h2>
+          <h2 className="text-xl font-semibold gradient-text">Change Password</h2>
           <p className="text-muted-foreground text-sm">
-            Test your current password strength
+            Update your admin password
           </p>
         </div>
 
@@ -138,7 +261,7 @@ export const PasswordManager = () => {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="new-password">Test New Password</Label>
+            <Label htmlFor="new-password">New Password</Label>
             <div className="relative">
               <Input
                 id="new-password"
@@ -146,7 +269,7 @@ export const PasswordManager = () => {
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
                 className="glass-card border-primary/20 pr-10"
-                placeholder="Test password strength"
+                placeholder="Enter new password"
                 required
               />
               <Button
@@ -172,7 +295,7 @@ export const PasswordManager = () => {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="confirm-password">Confirm Test Password</Label>
+            <Label htmlFor="confirm-password">Confirm New Password</Label>
             <div className="relative">
               <Input
                 id="confirm-password"
@@ -180,7 +303,7 @@ export const PasswordManager = () => {
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 className="glass-card border-primary/20 pr-10"
-                placeholder="Confirm test password"
+                placeholder="Confirm new password"
                 required
               />
               <Button
@@ -216,7 +339,7 @@ export const PasswordManager = () => {
             className="w-full"
             disabled={isLoading}
           >
-            {isLoading ? "Validating..." : "Test Password"}
+            {isLoading ? "Changing Password..." : "Change Password"}
           </Button>
         </form>
 
@@ -227,7 +350,7 @@ export const PasswordManager = () => {
               <span className="text-sm font-medium">Reset Authentication</span>
             </div>
             <p className="text-xs text-muted-foreground">
-              To change your password, clear all auth data and re-deploy with new credentials.
+              This will completely reset the instance, clearing all users, links, profile data, and themes. You'll need to set up the admin account again.
             </p>
             <Button
               onClick={handleResetApp}

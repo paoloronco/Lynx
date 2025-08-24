@@ -16,6 +16,11 @@ interface PublicViewProps {
 
 export const PublicView = ({ profile, links }: PublicViewProps) => {
   const visibleLinks = links.filter(link => {
+    // Always include links with personalizations, even if they're missing some fields
+    if (link.backgroundColor || link.textColor || link.icon) {
+      return true;
+    }
+    
     if (link.type === 'text') {
       return link.title.trim() !== '' && 
         ((link.content?.trim() !== '') || 
@@ -43,9 +48,19 @@ export const PublicView = ({ profile, links }: PublicViewProps) => {
         
         {/* Footer */}
         <div className="text-center pt-8">
-          <p className="text-xs text-muted-foreground opacity-60">
-            Connect with me through these links
-          </p>
+        <p className="text-xs text-muted-foreground opacity-60">
+          Powered by <a 
+          href="https://github.com/paoloronco/Lynx" 
+          target="_blank" 
+          rel="noopener noreferrer" 
+          className="underline hover:text-primary"
+        >
+          Lynx
+          </a>
+        </p>
+        <p className="text-[10px] text-muted-foreground opacity-50 mt-1">
+    Developed by Paolo Ronco
+  </p>
         </div>
       </div>
     </div>

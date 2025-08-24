@@ -11,24 +11,18 @@ interface InitialSetupProps {
 }
 
 export const InitialSetup = ({ onSetupComplete }: InitialSetupProps) => {
-  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
+  const username = 'admin'; // Fixed username
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     setError("");
-
-    if (username.length < 3) {
-      setError("Username must be at least 3 characters long");
-      setIsLoading(false);
-      return;
-    }
 
     if (!isPasswordStrong(password)) {
       setError("Password must be at least 8 characters with uppercase, lowercase, number, and special character");
@@ -43,9 +37,9 @@ export const InitialSetup = ({ onSetupComplete }: InitialSetupProps) => {
     }
 
     try {
-      const success = await setupInitialCredentials(username, password);
+      const success = await setupInitialCredentials(password);
       if (success) {
-        setAuthenticated(username);
+        setAuthenticated('admin');
         onSetupComplete();
       } else {
         setError("Setup failed. Please try again.");
@@ -57,8 +51,8 @@ export const InitialSetup = ({ onSetupComplete }: InitialSetupProps) => {
     }
   };
 
-  const handleGeneratePassword = () => {
-    const generated = generateSecurePassword();
+  const handleGeneratePassword = async () => {
+    const generated = await generateSecurePassword();
     setPassword(generated);
     setConfirmPassword(generated);
   };
@@ -70,16 +64,16 @@ export const InitialSetup = ({ onSetupComplete }: InitialSetupProps) => {
           <div className="flex justify-center">
             <Shield className="w-12 h-12 text-primary" />
           </div>
-          <h1 className="text-2xl font-bold gradient-text">Initial Setup</h1>
+          <h1 className="text-2xl font-bold gradient-text">Admin Setup</h1>
           <p className="text-muted-foreground text-sm">
-            Create your admin credentials to secure your link hub
+            Set up your admin password to secure your link hub
           </p>
         </div>
 
         <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-4 space-y-2">
           <div className="flex items-center gap-2 text-blue-400">
             <AlertTriangle className="w-4 h-4" />
-            <span className="text-sm font-medium">First Time Setup</span>
+            <span className="text-sm font-medium">Admin Account Setup</span>
           </div>
           <p className="text-xs text-muted-foreground">
             Set up your admin credentials. These will be stored securely and can be changed later in the admin panel.
@@ -88,17 +82,12 @@ export const InitialSetup = ({ onSetupComplete }: InitialSetupProps) => {
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="username">Admin Username</Label>
-            <Input
-              id="username"
-              type="text"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              className="glass-card border-primary/20"
-              placeholder="Choose a username"
-              required
-              minLength={3}
-            />
+            <Label>Admin Username</Label>
+            <div className="flex items-center gap-2 px-3 py-2 rounded-md border border-input bg-background text-sm">
+              <span className="text-muted-foreground">admin</span>
+              <span className="ml-auto text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full">Fixed</span>
+            </div>
+            <p className="text-xs text-muted-foreground">The admin username is fixed and cannot be changed.</p>
           </div>
 
           <div className="space-y-2">

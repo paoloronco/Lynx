@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
 import { PublicView } from "@/components/PublicView";
 import { LinkData } from "@/components/LinkCard";
-import { applyTheme, defaultTheme } from "@/lib/theme";
+import { applyTheme, defaultTheme, ThemeConfig } from "@/lib/theme";
+import { profileApi, linksApi, themeApi } from "@/lib/api-client";
 import profileAvatar from "@/assets/profile-avatar.jpg";
 
 interface ProfileData {
@@ -69,27 +70,68 @@ const Index = () => {
     },
   ]);
 
-  // Load data and theme from localStorage on mount
+  // Load data and theme from database on mount
   useEffect(() => {
-    const savedProfile = localStorage.getItem('mylinks-profile');
-    const savedLinks = localStorage.getItem('mylinks-links');
-    const savedTheme = localStorage.getItem('mylinks-theme');
-    
-    if (savedProfile) {
-      setProfile(JSON.parse(savedProfile));
-    }
-    
-    if (savedLinks) {
-      setLinks(JSON.parse(savedLinks));
-    }
+    const loadData = async () => {
+      try {
+        // Load profile data from database
+        const profileData = await profileApi.get();
+        if (profileData) {
+          setProfile({
+            name: profileData.name,
+            bio: profileData.bio,
+            avatar: profileData.avatar,
+            socialLinks: profileData.social_links || {}
+          });
+        }
 
-    // Apply theme to public view
-    if (savedTheme) {
-      const loadedTheme = JSON.parse(savedTheme);
-      applyTheme(loadedTheme);
-    } else {
-      applyTheme(defaultTheme);
-    }
+        // Load links data from database
+        const linksData = await linksApi.get();
+        if (linksData && linksData.length > 0) {
+          const formattedLinks = linksData.map(link => ({
+            id: link.id,
+            title: link.title,
+            description: link.description || '',
+            url: link.url,
+            type: link.type as 'link' | 'text',
+            icon: link.icon,
+            iconType: link.iconType,
+            backgroundColor: link.backgroundColor,
+            textColor: link.textColor,
+            size: link.size,
+            content: link.content,
+            textItems: link.textItems
+          }));
+          setLinks(formattedLinks);
+        }
+
+        // Load theme data from database and apply it
+        const themeData = await themeApi.get();
+        if (themeData) {
+          // If we have a full theme configuration, use it; otherwise merge with defaults
+          const loadedTheme: ThemeConfig = themeData.primary && themeData.background && themeData.foreground && !themeData.fontFamily
+            ? {
+                ...defaultTheme,
+                primary: themeData.primary,
+                background: themeData.background,
+                foreground: themeData.foreground
+              }
+            : {
+                ...defaultTheme,
+                ...themeData
+              };
+          applyTheme(loadedTheme);
+        } else {
+          applyTheme(defaultTheme);
+        }
+      } catch (error) {
+        console.error('Error loading data:', error);
+        // Fallback to default theme if database loading fails
+        applyTheme(defaultTheme);
+      }
+    };
+
+    loadData();
   }, []);
 
   return (

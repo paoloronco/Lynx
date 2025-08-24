@@ -29,14 +29,18 @@ export const ThemeCustomizer = ({ theme, onThemeChange }: ThemeCustomizerProps) 
   const updatePendingTheme = (updates: Partial<ThemeConfig>) => {
     const newTheme = { ...pendingTheme, ...updates };
     setPendingTheme(newTheme);
-    // Apply immediately for preview
-    applyTheme(newTheme);
+    // Don't apply theme changes to admin interface - only update the pending state
+    // The public page will load the saved theme from the database
   };
 
-  const saveTheme = () => {
-    onThemeChange(pendingTheme);
-    // Force re-apply to ensure persistence
-    applyTheme(pendingTheme);
+  const saveTheme = async () => {
+    try {
+      await onThemeChange(pendingTheme);
+      // Don't apply theme to admin interface - it should maintain its own styling
+      // The public page will load the saved theme from the database
+    } catch (error) {
+      console.error('Failed to save theme:', error);
+    }
   };
 
   const ColorPicker = ({ 
