@@ -2,7 +2,7 @@
 
 ### Your personal links hub
 
-[![Version](https://img.shields.io/badge/version-2.1.0-blue.svg)](https://github.com/paoloronco/Lynx)
+[![Version](https://img.shields.io/badge/version-3.0.0-blue.svg)](https://github.com/paoloronco/Lynx)
 
 **Lynx** is an open-source, self-hosted link manager that helps you gather all your digital touchpoints in a single page, with secure authentication and a fully customizable design.
 
