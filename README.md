@@ -86,7 +86,8 @@
 ## 🎥 Video
 
 #### How to deploy Lynx
-[![Lynx - Your Personal Links Hub](https://imgur.com/a/d9cNMeX)](https://vimeo.com/1117386711)
+[![Lynx - Your Personal Links Hub](./docs/screenshots/videocover-howtodeploylynx.png)](https://vimeo.com/1117386711)
+
 
 
 
@@ -97,6 +98,7 @@
 ### 1. Clone, Install & Run
 
 *(prerequisite: Node.js 18+)*
+  ```bash
     git clone https://github.com/paoloronco/Lynx.git
     cd Lynx
     npm install
@@ -105,6 +107,7 @@
     npm install
     cd ..
     npm run start
+  '''
 
 <p> Public → http://localhost:5173
 <p> Admin → http://localhost:5173/admin

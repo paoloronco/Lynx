@@ -175,7 +175,12 @@ const Admin = () => {
         showAvatar: typeof newProfile.showAvatar === 'boolean' ? newProfile.showAvatar : true,
       });
       setProfile(newProfile);
-    } catch (error) {
+    } catch (error: any) {
+      if (error?.message === 'AUTH_EXPIRED') {
+        // Session expired: force re-authentication
+        setIsLoggedIn(false);
+        return;
+      }
       console.error('Error saving profile:', error);
     }
   };
@@ -199,7 +204,11 @@ const Admin = () => {
       }));
       await linksApi.update(formattedLinks);
       setLinks(newLinks);
-    } catch (error) {
+    } catch (error: any) {
+      if (error?.message === 'AUTH_EXPIRED') {
+        setIsLoggedIn(false);
+        return;
+      }
       console.error('Error saving links:', error);
     }
   };
@@ -211,7 +220,11 @@ const Admin = () => {
       setTheme(newTheme);
       // Apply theme to admin interface too
       applyTheme(newTheme);
-    } catch (error) {
+    } catch (error: any) {
+      if (error?.message === 'AUTH_EXPIRED') {
+        setIsLoggedIn(false);
+        throw error; // Let component-level handlers know it failed due to auth
+      }
       console.error('Error saving theme:', error);
       throw error; // Re-throw to let the component handle the error
     }

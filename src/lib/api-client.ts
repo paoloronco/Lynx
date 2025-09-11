@@ -104,6 +104,11 @@ const apiRequest = async <T>(endpoint: string, options: RequestInit = {}): Promi
     const data = await response.json();
 
     if (!response.ok) {
+      // If token is invalid or expired, clear it and signal to UI
+      if (response.status === 401 || response.status === 403) {
+        removeAuthToken();
+        throw new Error('AUTH_EXPIRED');
+      }
       throw new Error(data.error || data.message || 'Request failed');
     }
 
@@ -188,9 +193,12 @@ export const profileApi = {
     return apiRequest<ApiResponse>('/profile', {
       method: 'PUT',
       body: JSON.stringify({
-        ...profile,
-        social_links: profile.socialLinks,
-        showAvatar: typeof profile.showAvatar === 'boolean' ? profile.showAvatar : true,
+        name: profile.name,
+        bio: profile.bio,
+        avatar: profile.avatar,
+        social_links: profile.socialLinks || {},
+        // backend expects snake_case; send numeric boolean for SQLite
+        show_avatar: typeof profile.showAvatar === 'boolean' ? (profile.showAvatar ? 1 : 0) : 1,
       }),
     });
   },

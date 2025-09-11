@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -34,6 +34,13 @@ export const ProfileSection = ({ profile, onProfileUpdate }: ProfileSectionProps
   const fileInputRef = useRef<HTMLInputElement>(null);
   const current = isEditing ? editProfile : profile;
   const [uploadError, setUploadError] = useState<string | null>(null);
+
+  // Keep editable state in sync with incoming profile when not editing
+  useEffect(() => {
+    if (!isEditing) {
+      setEditProfile(profile);
+    }
+  }, [profile, isEditing]);
 
   const handleSave = () => {
     onProfileUpdate(editProfile);
@@ -318,13 +325,17 @@ export const ProfileSection = ({ profile, onProfileUpdate }: ProfileSectionProps
               {current.bio || "Add a bio to tell people about yourself..."}
             </p>
             <Button
-              onClick={() => setIsEditing(true)}
-              variant="ghost"
-              size="icon"
-              className="absolute top-0 right-0 opacity-0 group-hover:opacity-100 transition-smooth"
-            >
-              <Edit className="w-4 h-4" />
-            </Button>
+              onClick={() => {
+                // Ensure we edit the latest profile values
+                setEditProfile(profile);
+                setIsEditing(true);
+              }}
+               variant="ghost"
+               size="icon"
+               className="absolute top-0 right-0 opacity-0 group-hover:opacity-100 transition-smooth"
+             >
+               <Edit className="w-4 h-4" />
+             </Button>
           </div>
         </div>
       )}
