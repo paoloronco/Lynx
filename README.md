@@ -11,10 +11,10 @@
 # 📑 Table of Contents  
 
 1. [Lynx](#lynx)  
+   - [🧪 Demo](#-demo)  
    - [✨ Features](#-features)  
    - [🔒 Security Features](#-security-features)  
-   - [🛠 Tech Stack](#-tech-stack)  
-   - [📸 Screenshots](#-screenshots)  
+   - [🛠 Tech Stack](#-tech-stack)   
    - [🎥 Video](#-video)  
 2. [🚀 Quick Start](#-quick-start)  
    - [1. Clone, Install & Run](#1-clone-install--run)  
@@ -26,6 +26,19 @@
 6. [📜 License](#-license)  
 
 ---
+
+## 🧪 Demo
+
+- 🌐 [Try Lynx Demo on Render](https://lynx-demo.onrender.com)  
+- **Admin Panel**: [https://lynx-demo.onrender.com/admin](https://lynx-demo.onrender.com/admin)  
+- **Login**:  
+  - User: `admin`  
+  - Password: `demo123` (the password can't be changed)
+
+⚠️ This demo runs on a free Render plan.  
+It may sleep after inactivity (first load can take ~40s).  
+The database resets automatically every 15 minutes.
+
 
 ## ✨ Features
 
@@ -58,37 +71,13 @@
 
 * * *
 
-## 📸 Screenshots
-
-![Public Page](./docs/screenshots/01-public-page.png)  
-*Public page displaying profile and all links.*
-
-![Public Page Mobile](./docs/screenshots/01-public-page-mobile.png)  
-*Public page mobile view.*
-
-![Admin Setup](./docs/screenshots/02-admin-setup.png)  
-*Initial setup screen to create the admin password.*
-
-![Admin Profile](./docs/screenshots/03-admin-profile.png)  
-*Admin profile section to edit name and bio.*
-
-![Admin Links](./docs/screenshots/04-admin-links.png)  
-*Admin links manager to add, edit, and organize links or text cards.*
-
-![Admin Theme](./docs/screenshots/05-admin-theme.png)  
-*Theme customizer for colors, layout, and styles.*
-
-![Admin Password](./docs/screenshots/06-admin-password.png)  
-*Password & security panel with change password and reset options.*
-
-* * *
-
 ## 🎥 Video
 
+#### Lynx Demo
+Coming soon...
+
 #### How to deploy Lynx
-[![Lynx - Your Personal Links Hub](./docs/screenshots/videocover-howtodeploylynx.png)](https://vimeo.com/1117386711)
-
-
+[![Lynx - Your Personal Links Hub](./docs/screenshots/Lynx-howtodeploy-final.png)](https://vimeo.com/1117386711)
 
 
 * * *
@@ -107,7 +96,7 @@
     npm install
     cd ..
     npm run start
-  '''
+  ```
 
 <p> Public → http://localhost:5173
 <p> Admin → http://localhost:5173/admin
