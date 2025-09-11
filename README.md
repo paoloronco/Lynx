@@ -42,14 +42,13 @@ The database resets automatically every 15 minutes.
 
 ## ✨ Features
 
-* 🗂 **Standalone** → no Firebase, Supabase, or external DBs
-* 🗄 **SQLite Database** → self-contained, file-based storage
+* 📝 **Customizable** → themes, colors, fonts, and layouts
 * 🔐 **Secure Authentication** → bcryptjs password hashing + JWT tokens
 * 🛠 **Admin Panel** → manage links, themes, profile, and settings
-* 🎨 **Full Customization** → themes, colors, fonts, and layouts
-* 🚀 **Deploy Anywhere** → Vercel, Docker, Linux server, Heroku
-
-* * *
+* 🗂 **Standalone** → no Firebase, Supabase, or external DBs
+* 🚀 **Deploy Anywhere** → Render, Railway, Docker, Linux Server, Heroku, GCP, DigitalOcean, Fly.io
+* 📱 **Mobile Responsive** → optimized for all devices
+* 🗄 **SQLite Database** → self-contained, file-based storage
 
 ### 🔒 Security Features
 
@@ -58,7 +57,7 @@ The database resets automatically every 15 minutes.
 * Database Safety: parameterized queries against SQLite
 * Session Security: cookies set HttpOnly and SameSite
 
-* * *
+---
 
 ## 🛠 Tech Stack
 
@@ -69,7 +68,7 @@ The database resets automatically every 15 minutes.
 ![Vite](https://img.shields.io/badge/Vite-646CFF?style=for-the-badge&logo=vite&logoColor=white)  
 ![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-38B2AC?style=for-the-badge&logo=tailwindcss&logoColor=white)  
 
-* * *
+---
 
 ## 🎥 Video
 
@@ -80,7 +79,7 @@ Coming soon...
 [![Lynx - Your Personal Links Hub](./docs/screenshots/Lynx-howtodeploy-final.png)](https://vimeo.com/1117386711)
 
 
-* * *
+---
 
 ## 🚀 Quick Start
 
@@ -179,9 +178,29 @@ Your app will be available at a URL like: https://your-app.onrender.com
 * Claude
 * Lovable
 
-* * *
+---
 
 📜 License
 
-This project is licensed under the MIT License.
-Free to use, share, and modify.
+MIT License
+
+Copyright (c) 2025 Paolo Ronco
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
