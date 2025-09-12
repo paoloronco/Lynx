@@ -1,7 +1,19 @@
+name: Deploy to Cloud Run from Source
+
+on:
+  push:
+    branches: [ "main" ]
+  workflow_dispatch:
+
+concurrency:
+  group: cloudrun-${{ github.ref }}
+  cancel-in-progress: true
+
 env:
   PROJECT_ID: ${{ vars.PROJECT_ID }}
   REGION:     ${{ vars.REGION }}
   SERVICE:    ${{ vars.SERVICE }}
+  # useremo il repo Artifact Registry già creato
   IMAGE:      ${{ vars.REGION }}-docker.pkg.dev/${{ vars.PROJECT_ID }}/cloud-run-source-deploy/lynx:${{ github.sha }}
 
 jobs:
@@ -10,6 +22,7 @@ jobs:
     permissions:
       contents: read
       id-token: write
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -22,11 +35,11 @@ jobs:
           workload_identity_provider: ${{ secrets.WIF_PROVIDER }}
           service_account:         ${{ secrets.WIF_SERVICE_ACCOUNT }}
 
-      # Build del container usando il Dockerfile appena creato
+      # 🔨 build immagine usando il Dockerfile nella ROOT
       - name: Build container image (Cloud Build)
         run: gcloud builds submit --tag "${{ env.IMAGE }}" .
 
-      # Deploy su Cloud Run usando l'immagine
+      # 🚀 deploy su Cloud Run usando l'immagine
       - id: deploy
         name: Deploy to Cloud Run
         uses: google-github-actions/deploy-cloudrun@v2
