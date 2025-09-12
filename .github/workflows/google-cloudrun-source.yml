@@ -13,8 +13,7 @@ env:
   PROJECT_ID: ${{ vars.PROJECT_ID }}
   REGION:     ${{ vars.REGION }}
   SERVICE:    ${{ vars.SERVICE }}
-  # useremo il repo Artifact Registry già creato
-  IMAGE:      ${{ vars.REGION }}-docker.pkg.dev/${{ vars.PROJECT_ID }}/cloud-run-source-deploy/lynx:${{ github.sha }}
+  IMAGE:      ${{ vars.REGION }}-docker.pkg.dev/${{ vars.PROJECT_ID }}/cloud-run-source-deploy/${{ vars.SERVICE }}:${{ github.sha }}
 
 jobs:
   deploy:
@@ -33,23 +32,21 @@ jobs:
         with:
           project_id: ${{ env.PROJECT_ID }}
           workload_identity_provider: ${{ secrets.WIF_PROVIDER }}
-          service_account:         ${{ secrets.WIF_SERVICE_ACCOUNT }}
+          service_account: ${{ secrets.WIF_SERVICE_ACCOUNT }}
 
-      # 🔨 build immagine usando il Dockerfile nella ROOT
       - name: Build container image (Cloud Build)
         run: gcloud builds submit --tag "${{ env.IMAGE }}" .
 
-      # 🚀 deploy su Cloud Run usando l'immagine
       - id: deploy
         name: Deploy to Cloud Run
         uses: google-github-actions/deploy-cloudrun@v2
         with:
+          project_id: ${{ env.PROJECT_ID }}
           region:  ${{ env.REGION }}
           service: ${{ env.SERVICE }}
           image:   ${{ env.IMAGE }}
-          env_vars: APP_PORT=${{ vars.APP_PORT }},START_CMD=${{ vars.START_CMD }}
-          flags: "--allow-unauthenticated"
-          timeout: 600s
+          allow_unauthenticated: true
+          timeout: "600s"
 
       - name: Show URL
         run: echo ${{ steps.deploy.outputs.url }}

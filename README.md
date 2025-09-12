@@ -73,10 +73,10 @@ The database resets automatically every 15 minutes.
 ## 🎥 Video
 
 #### Lynx Demo
-Coming soon...
+[![Watch the demo](./docs/demo.gif)](https://app.storylane.io/share/tjpm3tey6ven)
 
 #### How to deploy Lynx
-[![Lynx - Your Personal Links Hub](./docs/screenshots/Lynx-howtodeploy-final.png)](https://vimeo.com/1117386711)
+[![Lynx - Your Personal Links Hub](./docs/screenshots/Lynx-howtodeploy-final.png)](https://www.youtube.com/watch?v=x1MVY4vreOk)
 
 
 ---
@@ -166,9 +166,12 @@ Your app will be available at a URL like: https://your-app.onrender.com
   - Option to choose the placement of profile elements (name, bio, avatar, etc.)
 - **Links**
   - Ability to center text and customize its alignment within cards
+  - Ability to export Links & Profile as Json
 - **Themes**
   - Further improvements to theme usability and customization
   - Enhanced personalization options for layouts, colors, and styles
+- **Code**
+  - Code cleaning & refactoring: removing unnecessary parts, obsolete code, and unused dependencies (e.g., leftover Supabase or Firebase integrations).
 
 ---
 
