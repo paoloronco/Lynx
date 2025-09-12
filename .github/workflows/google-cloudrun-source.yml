@@ -1,3 +1,10 @@
+name: Deploy to Cloud Run from Source
+
+on:
+  push:
+    branches: [ "main" ]      # trigger su push a main
+  workflow_dispatch:           # permette l’esecuzione manuale
+
 env:
   PROJECT_ID: ${{ vars.PROJECT_ID }}
   REGION:     ${{ vars.REGION }}
@@ -6,6 +13,7 @@ env:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+
     permissions:
       contents: read
       id-token: write
@@ -18,7 +26,7 @@ jobs:
         name: Authenticate to Google Cloud
         uses: google-github-actions/auth@v2
         with:
-          project_id: ${{ env.PROJECT_ID }}               # 👈 aggiunto qui
+          project_id: ${{ env.PROJECT_ID }}              # <-- spostato qui
           workload_identity_provider: ${{ secrets.WIF_PROVIDER }}
           service_account:         ${{ secrets.WIF_SERVICE_ACCOUNT }}
 
@@ -28,7 +36,7 @@ jobs:
         with:
           region:  ${{ env.REGION }}
           service: ${{ env.SERVICE }}
-          source:  ./                                      # 👈 lascia “from source”
+          source:  ./                                     # deploy "from source"
 
       - name: Show URL
         run: echo ${{ steps.deploy.outputs.url }}
