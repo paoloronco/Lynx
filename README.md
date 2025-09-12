@@ -18,7 +18,8 @@
    - [🎥 Video](#-video)  
 2. [🚀 Quick Start](#-quick-start)  
    - [1. Clone, Install & Run](#1-clone-install--run)  
-   - [2. 🚀 Deploy on Render](#2--deploy-on-render)  
+   - [2. 🚀 Deploy on Railway](#2--deploy-on-railway)  
+   - [3. 🚀 Deploy on Render](#2--deploy-on-render)  
    - [3. 🚀 Other alternatives to deploy it](#3--other-alteratives-to-deploy-it)  
 3. [📝 Changelog](#-changelog)  
 4. [📌 To-Do / Next Steps](#-to-do--next-steps)  
@@ -29,14 +30,13 @@
 
 ## 🧪 Demo
 
-- 🌐 [Try Lynx Demo on Render](https://lynx-demo.onrender.com)  
-- **Admin Panel**: [https://lynx-demo.onrender.com/admin](https://lynx-demo.onrender.com/admin)  
+- 🌐 [Try Lynx Demo on Railway](https://lynx-demo.up.railway.app/)  
+- **Admin Panel**: [https://lynx-demo.up.railway.app/admin](https://lynx-demo.up.railway.app/admin)  
 - **Login**:  
   - User: `admin`  
   - Password: `demo123` (the password can't be changed)
 
-⚠️ This demo runs on a free Render plan.  
-It may sleep after inactivity (first load can take ~40s).  
+⚠️ This demo runs on a free Railway plan.  
 The database resets automatically every 15 minutes.
 
 
@@ -76,7 +76,7 @@ The database resets automatically every 15 minutes.
 [![Watch the demo](./docs/demo.gif)](https://app.storylane.io/share/tjpm3tey6ven)
 
 #### How to deploy Lynx
-[![Lynx - Your Personal Links Hub](./docs/screenshots/Lynx-howtodeploy-final.png)](https://www.youtube.com/watch?v=x1MVY4vreOk)
+[![Lynx - Your Personal Links Hub](./docs/screenshots/Lynx-howtodeploy-finalyt.png)](https://www.youtube.com/watch?v=x1MVY4vreOk)
 
 
 ---
@@ -100,7 +100,24 @@ The database resets automatically every 15 minutes.
 <p> Public → http://localhost:5173
 <p> Admin → http://localhost:5173/admin
 
-### 2. 🚀 Deploy on Render
+### 2. 🚀 Deploy on Railway
+
+You can deploy **Lynx** on [Railway](https://railway.com) in a few steps:
+1. Go to **Railway Dashboard** → New → **GitHub Repo**
+2. Connect **GitHub repo (Lynx)**
+3. Set the following commands:
+   - **Build Command**
+     ```bash
+     npm install && npm run build && cd server && npm install
+     ```
+   - **Start Command**
+     ```bash
+     npm run start
+     ```
+4. Click **Create** and wait for the deployment ✨
+5. Add a public domain in the settings 
+
+### 3. 🚀 Deploy on Render
 
 You can deploy **Lynx** on [Render](https://render.com) in a few steps:
 
@@ -121,12 +138,28 @@ You can deploy **Lynx** on [Render](https://render.com) in a few steps:
 Your app will be available at a URL like: https://your-app.onrender.com
 
 
-### 3. 🚀 Other alteratives to deploy it:
-- [Railway](https://railway.com)
-- Digital Ocean App Platform
-- Fly.io (Docker)
-- Heroku (Container)
-- Google Cloud Run (Container)
+### 4. 🚀 Other alternatives to deploy it:
+
+- [DigitalOcean App Platform](https://www.digitalocean.com/products/app-platform)  
+- [Fly.io (Docker)](https://fly.io/docs/)  
+- [Heroku (Container)](https://devcenter.heroku.com/articles/container-registry-and-runtime)  
+- [Google Cloud Run (Container)](https://cloud.google.com/run/docs/deploying)  
+- [Vercel (Node.js / Static)](https://vercel.com/docs)  
+- [Netlify (Static + Functions)](https://docs.netlify.com/)  
+- [AWS Elastic Beanstalk](https://docs.aws.amazon.com/elasticbeanstalk/)  
+- [Azure App Service](https://learn.microsoft.com/en-us/azure/app-service/)  
+- [Koyeb (Serverless Containers)](https://www.koyeb.com/docs)  
+- [CapRover (Self-hosted PaaS)](https://caprover.com/docs/)  
+- [Dokku (Self-hosted PaaS)](https://dokku.com/docs/getting-started/)  
+- [Coolify (Self-hosted PaaS)](https://coolify.io/docs)  
+- [Northflank](https://northflank.com/docs)  
+- [Qovery](https://hub.qovery.com/)  
+- [Cyclic.sh](https://docs.cyclic.sh/)  
+- [Glitch](https://glitch.com/)  
+- [Replit](https://docs.replit.com/)  
+- [Stormkit](https://stormkit.io/docs)  
+- [Appwrite (Functions/Containers)](https://appwrite.io/docs)  
+- [Supabase (Edge Functions)](https://supabase.com/docs/guides/functions)  
 
 ---
 
@@ -166,7 +199,7 @@ Your app will be available at a URL like: https://your-app.onrender.com
   - Option to choose the placement of profile elements (name, bio, avatar, etc.)
 - **Links**
   - Ability to center text and customize its alignment within cards
-  - Ability to export Links & Profile as Json
+  - Ability to export/import Links & Profile as Json
 - **Themes**
   - Further improvements to theme usability and customization
   - Enhanced personalization options for layouts, colors, and styles
