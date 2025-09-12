@@ -1,0 +1,41 @@
+name: 'Deploy to Cloud Run from Source'
+
+on:
+  push:
+    branches: [ "main" ]   # niente virgolette doppie interne
+
+env:
+  PROJECT_ID: ${{ vars.PROJECT_ID }}
+  REGION:     ${{ vars.REGION }}
+  SERVICE:    ${{ vars.SERVICE }}
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - id: auth
+        name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.WIF_PROVIDER }}
+          service_account:         ${{ secrets.WIF_SERVICE_ACCOUNT }}
+
+      - id: deploy
+        name: Deploy to Cloud Run
+        uses: google-github-actions/deploy-cloudrun@v2
+        with:
+          project: ${{ env.PROJECT_ID }}
+          region:  ${{ env.REGION }}
+          service: ${{ env.SERVICE }}
+          source:  ./
+
+      - name: Show output
+        run: echo ${{ steps.deploy.outputs.url }}
