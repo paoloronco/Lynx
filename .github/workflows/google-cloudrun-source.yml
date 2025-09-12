@@ -38,7 +38,7 @@ jobs:
             service: ${{ env.SERVICE }}
             source:  ./
             timeout: 600s
-            flags: "--port 3000"
+            flags: "--port 5000"
 
       - name: Show URL
         run: echo ${{ steps.deploy.outputs.url }}
