@@ -1,23 +1,15 @@
-name: Deploy to Cloud Run from Source
-
-on:
-  push:
-    branches: [ "main" ]      # trigger su push a main
-  workflow_dispatch:           # permette l’esecuzione manuale
-
 env:
   PROJECT_ID: ${{ vars.PROJECT_ID }}
   REGION:     ${{ vars.REGION }}
   SERVICE:    ${{ vars.SERVICE }}
+  IMAGE:      ${{ vars.REGION }}-docker.pkg.dev/${{ vars.PROJECT_ID }}/cloud-run-source-deploy/lynx:${{ github.sha }}
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
-
     permissions:
       contents: read
       id-token: write
-
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -26,19 +18,25 @@ jobs:
         name: Authenticate to Google Cloud
         uses: google-github-actions/auth@v2
         with:
-          project_id: ${{ env.PROJECT_ID }}              # <-- spostato qui
+          project_id: ${{ env.PROJECT_ID }}
           workload_identity_provider: ${{ secrets.WIF_PROVIDER }}
           service_account:         ${{ secrets.WIF_SERVICE_ACCOUNT }}
 
+      # Build del container usando il Dockerfile appena creato
+      - name: Build container image (Cloud Build)
+        run: gcloud builds submit --tag "${{ env.IMAGE }}" .
+
+      # Deploy su Cloud Run usando l'immagine
       - id: deploy
         name: Deploy to Cloud Run
         uses: google-github-actions/deploy-cloudrun@v2
         with:
-            region:  ${{ env.REGION }}
-            service: ${{ env.SERVICE }}
-            source:  ./
-            timeout: 600s
-            flags: "--port 5000"
+          region:  ${{ env.REGION }}
+          service: ${{ env.SERVICE }}
+          image:   ${{ env.IMAGE }}
+          env_vars: APP_PORT=${{ vars.APP_PORT }},START_CMD=${{ vars.START_CMD }}
+          flags: "--allow-unauthenticated"
+          timeout: 600s
 
       - name: Show URL
         run: echo ${{ steps.deploy.outputs.url }}
