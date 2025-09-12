@@ -37,6 +37,8 @@ jobs:
             region:  ${{ env.REGION }}
             service: ${{ env.SERVICE }}
             source:  ./
+            timeout: 600s
+            flags: "--port 3000"
 
       - name: Show URL
         run: echo ${{ steps.deploy.outputs.url }}
