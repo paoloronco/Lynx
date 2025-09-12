@@ -34,9 +34,10 @@ jobs:
         name: Deploy to Cloud Run
         uses: google-github-actions/deploy-cloudrun@v2
         with:
-          region:  ${{ env.REGION }}
-          service: ${{ env.SERVICE }}
-          source:  ./                                     # deploy "from source"
+            region:  ${{ env.REGION }}
+            service: ${{ env.SERVICE }}
+            source:  ./
+            build_service_account: "${{ env.PROJECT_ID }}@cloudbuild.gserviceaccount.com"
 
       - name: Show URL
         run: echo ${{ steps.deploy.outputs.url }}
