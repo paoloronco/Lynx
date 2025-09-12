@@ -37,7 +37,6 @@ jobs:
             region:  ${{ env.REGION }}
             service: ${{ env.SERVICE }}
             source:  ./
-            build_service_account: "${{ env.PROJECT_ID }}@cloudbuild.gserviceaccount.com"
 
       - name: Show URL
         run: echo ${{ steps.deploy.outputs.url }}
