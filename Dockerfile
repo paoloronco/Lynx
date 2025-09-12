@@ -1,41 +1,32 @@
-# ---------- STAGE 1: build frontend ----------
+# ---------- STAGE 1: build ----------
 FROM node:18-slim AS builder
 WORKDIR /app
 
-# devDeps incluse per poter eseguire "vite build"
+# Dev deps incluse per poter fare vite build
 COPY package*.json ./
 RUN npm ci
 
+# Copia sorgenti e builda il frontend (Vite)
 COPY . .
-# produce ./dist (come fai in locale con "npm run build")
 RUN npm run build
 
-# installa SOLO le prod deps del server
+# Installa solo le prod deps del server
 WORKDIR /app/server
 RUN npm ci --omit=dev
 
-# ---------- STAGE 2: runtime con socat ----------
+# ---------- STAGE 2: runtime ----------
 FROM node:18-slim
 WORKDIR /app
-
-# util per proxy 8080 -> 3000
-RUN apt-get update && apt-get install -y --no-install-recommends socat && rm -rf /var/lib/apt/lists/*
-
 ENV NODE_ENV=production
 ENV PORT=8080
-ENV APP_PORT=3000
 
-# porta solo ciò che serve a runtime
+# porta solo ciò che serve
 COPY --from=builder /app/dist    /app/dist
 COPY --from=builder /app/server  /app/server
-COPY --from=builder /app/package*.json /app/
 
-# (opzionale) se "npm start" vive nel package.json root
-RUN npm ci --omit=dev
-
+# Il server ha già le sue dipendenze in /app/server/node_modules
 EXPOSE 8080
 
-# Avvia il tuo server (che ascolta su 3000) + proxy su 8080
-# Se "npm start" avvia il server, usa START_CMD="npm start"
-ENV START_CMD="node server/index.js"
-CMD bash -lc "$START_CMD & socat TCP-LISTEN:$PORT,fork,reuseaddr TCP:127.0.0.1:$APP_PORT"
+# Avvia direttamente il server (che ascolta su 8080)
+WORKDIR /app/server
+CMD ["npm","start"]
