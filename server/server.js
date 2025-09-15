@@ -694,7 +694,17 @@ app.post('/api/auth/force-reset', resetLimiter, async (req, res) => {
 });
 
 // Serve React app for all other routes
-app.get('*', (req, res) => {
+// Rate limit for serving SPA index.html (to mitigate file system abuse)
+const spaLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // limit each IP to 100 requests per window per SPA access
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: (req) => req.ip,
+  message: { success: false, error: "Too many requests, please try again later." },
+});
+
+app.get('*', spaLimiter, (req, res) => {
   res.sendFile(join(__dirname, '../dist/index.html'));
 });
 
