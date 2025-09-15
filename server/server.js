@@ -50,7 +50,21 @@ app.use(cors({
   credentials: true
 }));
 app.use(helmet({
-  contentSecurityPolicy: false
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
+      styleSrc: ["'self'", "'unsafe-inline'"],
+      imgSrc: ["'self'", "data:", "https:", "http:"],
+      connectSrc: ["'self'", FRONTEND_URL],
+      fontSrc: ["'self'", "data:"],
+      objectSrc: ["'none'"],
+      mediaSrc: ["'self'"],
+      frameSrc: ["'self'"]
+    },
+    reportOnly: false
+  },
+  crossOriginEmbedderPolicy: false
 }));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ limit: '10mb', extended: true }));
@@ -589,7 +603,7 @@ const resetApplicationData = async () => {
 };
 
 // Reset authentication - clear ALL data and reset to initial state (requires authentication)
-app.post('/api/auth/reset', authenticateToken, async (req, res) => {
+app.post('/api/auth/reset', authenticateToken, resetLimiter, async (req, res) => {
   try {
     console.log('Authenticated reset endpoint called by user:', req.user?.username || 'unknown');
     

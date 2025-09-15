@@ -83,6 +83,10 @@ The database resets automatically every 15 minutes.
 
 ## 🚀 Quick Start
 
+Credentials:
+  User: `admin`
+Password: `ChangeMe123!`
+
 ### 1. Clone, Install & Run
 
 *(prerequisite: Node.js 18+)*

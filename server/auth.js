@@ -75,11 +75,9 @@ export const authenticateUser = async (password) => {
     const isMatch = await bcrypt.compare(password, user.password_hash);
     
     if (!isMatch) {
-      console.log('Password verification failed');
-      // Log the first few characters of the attempted password for debugging
-      console.log(`Attempted password (first 5 chars): ${password.substring(0, 5)}...`);
+      console.log('Authentication failed');
     } else {
-      console.log('Password verification successful');
+      console.log('Authentication successful');
     }
     
     return isMatch;

@@ -53,8 +53,6 @@ export const PasswordManager = () => {
     setMessage(null);
     
     try {
-      console.log('Attempting to change password...');
-      
       const result = await authApi.changePassword(currentPassword, newPassword);
       
       if (result.success) {
@@ -77,14 +75,13 @@ export const PasswordManager = () => {
         }, 2000);
       } else {
         const errorMessage = result.error || 'Failed to change password. Please try again.';
-        console.error('Password change failed:', errorMessage);
         setMessage({ 
           type: 'error', 
           text: errorMessage
         });
       }
     } catch (error: any) {
-      console.error('Error changing password:', error);
+      console.error('Error changing password:', error.message);
       const errorMessage = error?.message || 'An error occurred while changing the password. Please try again.';
       setMessage({ 
         type: 'error', 
@@ -118,7 +115,6 @@ export const PasswordManager = () => {
   
   const attemptForceReset = async (): Promise<void> => {
     try {
-      console.log('Attempting force reset...');
       const response = await fetch('http://localhost:3001/api/auth/force-reset', {
         method: 'POST',
         headers: {
@@ -141,7 +137,7 @@ export const PasswordManager = () => {
         throw new Error(result.error || 'Failed to reset application');
       }
     } catch (error) {
-      console.error('Force reset failed:', error);
+      console.error('Force reset failed:', error.message);
       // Even if reset fails, we should still clear local data and redirect
       clearAllAuthData();
       
@@ -166,7 +162,6 @@ export const PasswordManager = () => {
     try {
       // First try the authenticated reset
       try {
-        console.log('Attempting authenticated reset...');
         const result = await authApi.reset();
         
         if (result.success) {
@@ -176,11 +171,11 @@ export const PasswordManager = () => {
         
         throw new Error(result.error || 'Reset failed');
       } catch (error) {
-        console.log('Authenticated reset failed, trying force reset...', error);
+        console.log('Authenticated reset failed, trying force reset...', error.message);
         await attemptForceReset();
       }
     } catch (error: any) {
-      console.error('Reset failed:', error);
+      console.error('Reset failed:', error.message);
       setMessage({ 
         type: 'error', 
         text: error.message || 'Failed to reset application. Please try again.' 
