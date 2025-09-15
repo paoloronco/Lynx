@@ -1,8 +1,12 @@
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { dbGet, dbRun } from './database.js';
+import { randomBytes, randomInt } from 'crypto';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'your-super-secret-jwt-key-change-in-production';
+const JWT_SECRET = process.env.JWT_SECRET || randomBytes(32).toString('hex');
+if (process.env.NODE_ENV === 'production' && !process.env.JWT_SECRET) {
+  console.warn('JWT_SECRET is not set. A random key was generated at runtime; tokens will be invalidated on restart. Set JWT_SECRET in production.');
+}
 const SALT_ROUNDS = 12;
 
 // Check if this is the first time setup (no admin exists)
@@ -47,7 +51,7 @@ export const setupInitialCredentials = async (password) => {
 // Authenticate user against database
 export const authenticateUser = async (password) => {
   try {
-    console.log('Authenticating admin user');
+    console.log('Authenticating admin user...');
     
     const user = await dbGet(
       'SELECT username, password_hash, salt FROM admin_users WHERE username = ?',
@@ -59,22 +63,26 @@ export const authenticateUser = async (password) => {
       return false;
     }
     
-    console.log('Found admin user, comparing passwords...');
+    console.log('Found admin user in database');
+    console.log('Stored hash:', user.password_hash);
     
-    // Hash the provided password with the stored salt
-    const hashedPassword = await bcrypt.hash(password, user.salt);
-    const isValid = hashedPassword === user.password_hash;
+    // Log the first few characters of the stored hash and salt for debugging
+    console.log(`Stored hash (first 10 chars): ${user.password_hash?.substring(0, 10)}...`);
+    console.log(`Stored salt: ${user.salt}`);
     
-    if (!isValid) {
-      console.log('Password comparison failed');
-      console.log('Stored hash:', user.password_hash);
-      console.log('Computed hash:', hashedPassword);
-      console.log('Using salt:', user.salt);
+    // Use bcrypt.compare to verify the password
+    console.log('Verifying password...');
+    const isMatch = await bcrypt.compare(password, user.password_hash);
+    
+    if (!isMatch) {
+      console.log('Password verification failed');
+      // Log the first few characters of the attempted password for debugging
+      console.log(`Attempted password (first 5 chars): ${password.substring(0, 5)}...`);
     } else {
-      console.log('Authentication successful');
+      console.log('Password verification successful');
     }
     
-    return isValid;
+    return isMatch;
   } catch (error) {
     console.error('Error in authenticateUser:', error);
     return false;
@@ -149,19 +157,24 @@ export const generateSecurePassword = () => {
   
   // Ensure at least one character from each category
   let password = '';
-  password += uppercase[Math.floor(Math.random() * uppercase.length)];
-  password += lowercase[Math.floor(Math.random() * lowercase.length)];
-  password += numbers[Math.floor(Math.random() * numbers.length)];
-  password += special[Math.floor(Math.random() * special.length)];
+  password += uppercase[randomInt(uppercase.length)];
+  password += lowercase[randomInt(lowercase.length)];
+  password += numbers[randomInt(numbers.length)];
+  password += special[randomInt(special.length)];
   
   // Fill remaining length with random characters
   const allChars = uppercase + lowercase + numbers + special;
   for (let i = 4; i < 16; i++) {
-    password += allChars[Math.floor(Math.random() * allChars.length)];
+    password += allChars[randomInt(allChars.length)];
   }
   
-  // Shuffle the password
-  return password.split('').sort(() => Math.random() - 0.5).join('');
+  // Secure Fisher-Yates shuffle using crypto randomness
+  const arr = password.split('');
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = randomInt(i + 1);
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr.join('');
 };
 
 // Middleware to verify authentication

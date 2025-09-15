@@ -13,25 +13,100 @@ import {
   isPasswordStrong,
   generateSecurePassword
 } from './auth.js';
+import helmet from 'helmet';
+import rateLimit from 'express-rate-limit';
+import { z } from 'zod';
+import { timingSafeEqual } from 'crypto';
+import cookieParser from 'cookie-parser';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
+function safeJsonParse(jsonString, defaultValue = {}) {
+  try {
+    if (typeof jsonString !== 'string') {
+      return defaultValue;
+    }
+    const parsed = JSON.parse(jsonString);
+    // Ensure the parsed value is an object and not an array or other type
+    return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : defaultValue;
+  } catch (e) {
+    return defaultValue;
+  }
+}
+
 const app = express();
 const PORT = process.env.PORT || 3001;
+const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:3000';
+const COOKIE_SECRET = process.env.COOKIE_SECRET || 'dev-cookie-secret';
+
+// Ensure correct client IP detection when behind a proxy/load balancer
+// This is important so express-rate-limit keys by the real client IP
+app.set('trust proxy', 1);
 
 // Middleware
-app.use(cors());
-// Increase body size limits to support base64-encoded avatar images
+app.use(cors({
+  origin: FRONTEND_URL,
+  credentials: true
+}));
+app.use(helmet({
+  contentSecurityPolicy: false
+}));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ limit: '10mb', extended: true }));
 app.use(express.static(join(__dirname, '../dist')));
+app.use(cookieParser(COOKIE_SECRET));
+
+// Rate limiting
+const apiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 300,
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: (req) => {
+    // Extract IP from X-Forwarded-For if behind proxy, otherwise use remoteAddress
+    return req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.socket.remoteAddress;
+  }
+});
+
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 20,
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: (req) => {
+    return req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.socket.remoteAddress;
+  }
+});
+
+const loginLimiter = rateLimit({
+  windowMs: 10 * 60 * 1000, // 10 minutes
+  max: 5, // Limit each IP to 5 failed login attempts per 10 minutes
+  standardHeaders: true,
+  legacyHeaders: false,
+  skipSuccessfulRequests: true, // Only count failed attempts
+  keyGenerator: (req) => {
+    return req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.socket.remoteAddress;
+  },
+  message: {
+    success: false,
+    error: 'Too many failed login attempts. Please try again later.'
+  }
+});
+
+const resetLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: 2,
+});
+
+// Apply rate limiting
+app.use('/api', apiLimiter);
 
 // Initialize database
 await initializeDatabase();
 
 // Auth Routes
-app.get('/api/auth/setup-status', async (req, res) => {
+app.get('/api/auth/setup-status', authLimiter, async (req, res) => {
   try {
     const firstTime = await isFirstTimeSetup();
     res.json({ isFirstTimeSetup: firstTime });
@@ -40,7 +115,7 @@ app.get('/api/auth/setup-status', async (req, res) => {
   }
 });
 
-app.post('/api/auth/setup', async (req, res) => {
+app.post('/api/auth/setup', authLimiter, async (req, res) => {
   try {
     const { password } = req.body;
     
@@ -61,7 +136,7 @@ app.post('/api/auth/setup', async (req, res) => {
   }
 });
 
-app.post('/api/auth/login', async (req, res) => {
+app.post('/api/auth/login', loginLimiter, async (req, res) => {
   try {
     const { password } = req.body;
     
@@ -69,12 +144,29 @@ app.post('/api/auth/login', async (req, res) => {
       return res.status(400).json({ error: 'Password is required' });
     }
     
+    console.log('Login attempt received');
     const isValid = await authenticateUser(password);
+    
     if (!isValid) {
+      console.log('Login failed: Invalid password');
+      // Get the stored user to check what's in the database
+      const user = await dbGet('SELECT * FROM admin_users WHERE username = ?', ['admin']);
+      console.log('Stored user data:', user);
       return res.status(401).json({ error: 'Invalid password' });
     }
     
+    console.log('Login successful, generating token...');
     const token = generateToken('admin');
+    
+    // Set secure cookie
+    res.cookie('token', token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      path: '/',
+      signed: true,
+      maxAge: 12 * 60 * 60 * 1000,
+    });
     res.json({ success: true, token });
   } catch (error) {
     console.error('Login error:', error);
@@ -82,7 +174,7 @@ app.post('/api/auth/login', async (req, res) => {
   }
 });
 
-app.post('/api/auth/verify', authenticateToken, async (req, res) => {
+app.post('/api/auth/verify', authLimiter, authenticateToken, async (req, res) => {
   try {
     // Get the full user data from database
     const user = await dbGet(
@@ -126,7 +218,7 @@ app.get('/api/profile', async (req, res) => {
       name: profile.name,
       bio: profile.bio,
       avatar: profile.avatar,
-      social_links: profile.social_links ? JSON.parse(profile.social_links) : {},
+      social_links: safeJsonParse(profile.social_links, {}),
       show_avatar: profile.show_avatar === 0 ? 0 : 1
     });
   } catch (error) {
@@ -185,9 +277,30 @@ app.get('/api/links', async (req, res) => {
   }
 });
 
+// Define strict validation schema to avoid type confusion
+const LinkSchema = z.object({
+  id: z.number().int().nonnegative(),
+  title: z.string().min(1).max(200),
+  description: z.string().max(500).optional().default(''),
+  url: z.string().max(2048).optional().default(''),
+  icon: z.string().max(200).nullable().optional().default(null),
+  type: z.string().min(1).max(50).optional().default('link'),
+  textItems: z.array(z.string().max(200)).nullable().optional(),
+  backgroundColor: z.string().max(50).nullable().optional(),
+  textColor: z.string().max(50).nullable().optional(),
+  size: z.string().max(20).nullable().optional(),
+  iconType: z.string().max(50).nullable().optional(),
+  content: z.string().max(5000).nullable().optional(),
+}).strip();
+const LinksPayloadSchema = z.array(LinkSchema).max(200);
+
 app.put('/api/links', authenticateToken, async (req, res) => {
   try {
-    const links = req.body;
+    if (!Array.isArray(req.body)) {
+      return res.status(400).json({ error: 'Request body must be an array of links.' });
+    }
+    
+    const links = LinksPayloadSchema.parse(req.body);
     
     // Delete all existing links
     await dbRun('DELETE FROM links');
@@ -218,6 +331,9 @@ app.put('/api/links', authenticateToken, async (req, res) => {
     
     res.json({ success: true });
   } catch (error) {
+    if (error instanceof z.ZodError) {
+      return res.status(400).json({ error: 'Invalid links payload', details: error.errors });
+    }
     res.status(500).json({ error: 'Failed to save links' });
   }
 });
@@ -298,7 +414,7 @@ app.post('/api/validate-password', (req, res) => {
   res.json({ isStrong });
 });
 
-app.post('/api/auth/change-password', authenticateToken, async (req, res) => {
+app.post('/api/auth/change-password', authLimiter, authenticateToken, async (req, res) => {
   try {
     const { currentPassword, newPassword } = req.body || {};
 
@@ -354,6 +470,29 @@ app.post('/api/auth/change-password', authenticateToken, async (req, res) => {
   } catch (error) {
     console.error('Change password error:', error);
     return res.status(500).json({ success: false, error: 'Failed to change password' });
+  }
+});
+
+// Temporary debug endpoint - remove after use
+app.get('/api/debug/admin', async (req, res) => {
+  try {
+    const admin = await dbGet('SELECT * FROM admin_users WHERE username = ?', ['admin']);
+    if (!admin) {
+      return res.json({ exists: false, message: 'No admin user found' });
+    }
+    
+    // Don't send the actual password hash and salt in production
+    res.json({
+      exists: true,
+      username: admin.username,
+      hasPassword: !!admin.password_hash,
+      passwordHashLength: admin.password_hash?.length,
+      saltLength: admin.salt?.length,
+      createdAt: admin.created_at
+    });
+  } catch (error) {
+    console.error('Debug error:', error);
+    res.status(500).json({ error: 'Debug error', details: error.message });
   }
 });
 
@@ -484,7 +623,7 @@ app.post('/api/auth/reset', authenticateToken, async (req, res) => {
 });
 
 // Special unauthenticated reset endpoint (for when you're locked out)
-app.post('/api/auth/force-reset', async (req, res) => {
+app.post('/api/auth/force-reset', resetLimiter, async (req, res) => {
   try {
     console.log('Force reset endpoint called');
     
@@ -499,15 +638,27 @@ app.post('/api/auth/force-reset', async (req, res) => {
     }
     
     // Verify reset token from environment variable or header
-    const resetToken = process.env.RESET_TOKEN || 'default-reset-token';
-    const providedToken = req.headers['x-reset-token'] || (req.body ? req.body.token : null);
-    
-    if (!providedToken || providedToken !== resetToken) {
+    const resetToken = process.env.RESET_TOKEN;
+    const providedToken = req.headers['x-reset-token'];
+
+    if (!resetToken || typeof resetToken !== 'string' || resetToken.length < 32) {
+      console.warn('Force reset disabled: strong RESET_TOKEN env var not set');
+      return res.status(403).json({ success: false, error: 'Unauthorized: Reset disabled' });
+    }
+
+    if (!providedToken || typeof providedToken !== 'string') {
       console.log('Invalid or missing reset token');
-      return res.status(403).json({ 
-        success: false, 
-        error: 'Unauthorized: Invalid reset token' 
-      });
+      return res.status(403).json({ success: false, error: 'Unauthorized: Invalid reset token' });
+    }
+
+    // Constant-time comparison
+    const a = Buffer.from(providedToken);
+    const b = Buffer.from(resetToken);
+    const match = a.length === b.length && timingSafeEqual(a, b);
+
+    if (!match) {
+      console.log('Invalid or missing reset token');
+      return res.status(403).json({ success: false, error: 'Unauthorized: Invalid reset token' });
     }
     
     console.log('Resetting application data...');
@@ -533,8 +684,14 @@ app.get('*', (req, res) => {
   res.sendFile(join(__dirname, '../dist/index.html'));
 });
 
-app.listen(PORT, () => {
+app.listen(PORT, '0.0.0.0', () => {
   console.log(`Server running on port ${PORT}`);
   console.log(`Frontend: http://localhost:${PORT}`);
   console.log(`API: http://localhost:${PORT}/api`);
+  console.log('Rate limiting active:');
+  console.log('- Global API: 300 requests/15min per IP');
+  console.log('- Auth endpoints: 20 requests/15min per IP');
+  console.log('- Login attempts: 5 failed/10min per IP');
+  console.log('- Force reset: 2 requests/hour per IP');
+  console.log('Trust proxy:', app.get('trust proxy') ? 'Enabled' : 'Disabled');
 });
