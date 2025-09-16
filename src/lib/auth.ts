@@ -1,5 +1,38 @@
 import { authApi, utilityApi } from './api-client';
 
+// Secure randomness utilities
+const getCrypto = (): Crypto => {
+  if (typeof globalThis !== 'undefined' && globalThis.crypto && typeof globalThis.crypto.getRandomValues === 'function') {
+    return globalThis.crypto as Crypto;
+  }
+  throw new Error('Secure crypto.getRandomValues is not available in this environment');
+};
+
+const getSecureRandomInt = (maxExclusive: number): number => {
+  if (maxExclusive <= 0) throw new Error('maxExclusive must be > 0');
+  const cryptoObj = getCrypto();
+  // Rejection sampling to avoid modulo bias
+  const maxUint32 = 0xFFFFFFFF;
+  const limit = Math.floor((maxUint32 + 1) / maxExclusive) * maxExclusive;
+  const buffer = new Uint32Array(1);
+  let value = 0;
+  do {
+    cryptoObj.getRandomValues(buffer);
+    value = buffer[0];
+  } while (value >= limit);
+  return value % maxExclusive;
+};
+
+const secureShuffle = (input: string[]): string[] => {
+  for (let i = input.length - 1; i > 0; i--) {
+    const j = getSecureRandomInt(i + 1);
+    const tmp = input[i];
+    input[i] = input[j];
+    input[j] = tmp;
+  }
+  return input;
+};
+
 // Check if this is the first time setup (no admin exists)
 export const isFirstTimeSetup = async (): Promise<boolean> => {
   try {
@@ -81,19 +114,20 @@ export const generateSecurePassword = async (): Promise<string> => {
     
     // Ensure at least one character from each category
     let password = '';
-    password += uppercase[Math.floor(Math.random() * uppercase.length)];
-    password += lowercase[Math.floor(Math.random() * lowercase.length)];
-    password += numbers[Math.floor(Math.random() * numbers.length)];
-    password += special[Math.floor(Math.random() * special.length)];
+    password += uppercase[getSecureRandomInt(uppercase.length)];
+    password += lowercase[getSecureRandomInt(lowercase.length)];
+    password += numbers[getSecureRandomInt(numbers.length)];
+    password += special[getSecureRandomInt(special.length)];
     
     // Fill remaining length with random characters
     const allChars = uppercase + lowercase + numbers + special;
     for (let i = 4; i < 16; i++) {
-      password += allChars[Math.floor(Math.random() * allChars.length)];
+      password += allChars[getSecureRandomInt(allChars.length)];
     }
     
     // Shuffle the password
-    return password.split('').sort(() => Math.random() - 0.5).join('');
+    const shuffled = secureShuffle(password.split(''));
+    return shuffled.join('');
   }
 };
 
