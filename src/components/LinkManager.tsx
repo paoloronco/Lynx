@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Plus, Link, Type } from "lucide-react";
+import { Plus, Link, Type, Upload, Download } from "lucide-react";
 import { LinkCard, LinkData } from "./LinkCard";
 import { TextCard } from "./TextCard";
 
@@ -13,11 +13,12 @@ interface LinkManagerProps {
 export const LinkManager = ({ links, onLinksUpdate }: LinkManagerProps) => {
   const [draggedItem, setDraggedItem] = useState<string | null>(null);
   const [dragOverId, setDragOverId] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
 
   const addNewLink = () => {
     const newLink: LinkData = {
       id: Date.now().toString(),
-      title: "",
+      title: "New link",
       description: "",
       url: "",
       type: "link",
@@ -28,7 +29,7 @@ export const LinkManager = ({ links, onLinksUpdate }: LinkManagerProps) => {
   const addNewTextCard = () => {
     const newTextCard: LinkData = {
       id: Date.now().toString(),
-      title: "",
+      title: "New text",
       description: "",
       url: "",
       type: "text",
@@ -88,7 +89,52 @@ export const LinkManager = ({ links, onLinksUpdate }: LinkManagerProps) => {
     setDragOverId(targetId);
     // Reorder live as we drag over items for fluid UX
     performReorder(draggedItem, targetId);
-    setDraggedItem(targetId);
+  };
+
+  // Export links as JSON
+  const exportLinks = async () => {
+    try {
+      setBusy(true);
+      const blob = await (await import('@/lib/api-client')).linksApi.export();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'links-export.json';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  // Import links from JSON
+  const importLinks = async (file: File) => {
+    try {
+      setBusy(true);
+      const text = await file.text();
+      const data = JSON.parse(text);
+      const { linksApi } = await import('@/lib/api-client');
+      await linksApi.import(data);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const handleImportFile = () => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'application/json';
+    input.onchange = async () => {
+      const file = input.files?.[0];
+      if (file) await importLinks(file);
+    };
+    input.click();
   };
 
   const moveByOffset = (id: string, delta: number) => {
@@ -122,6 +168,12 @@ export const LinkManager = ({ links, onLinksUpdate }: LinkManagerProps) => {
           >
             <Type className="w-4 h-4" />
             Add Text
+          </Button>
+          <Button onClick={exportLinks} variant="outline" className="gap-2" disabled={busy}>
+            <Download className="w-4 h-4" /> Export
+          </Button>
+          <Button onClick={handleImportFile} variant="outline" className="gap-2" disabled={busy}>
+            <Upload className="w-4 h-4" /> Import
           </Button>
         </div>
       </div>

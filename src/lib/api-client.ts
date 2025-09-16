@@ -1,18 +1,134 @@
 const API_BASE = '/api';
 
-// Get auth token from localStorage
+// --- Secure token storage (AES-GCM via Web Crypto) ---
+const TOKEN_STORAGE_KEY = 'lynx-auth-token';
+const TOKEN_IV_PREFIX = 'lynx-auth-iv-';
+const DEVICE_SECRET_KEY = 'lynx-device-secret';
+
+const textEncoder = new TextEncoder();
+const textDecoder = new TextDecoder();
+
+const getCryptoOrThrow = (): Crypto => {
+  if (typeof crypto !== 'undefined' && crypto.subtle) return crypto as Crypto;
+  throw new Error('Web Crypto API is not available');
+};
+
+const getOrCreateDeviceSecret = (): Uint8Array => {
+  let existing = localStorage.getItem(DEVICE_SECRET_KEY);
+  if (existing) {
+    return Uint8Array.from(atob(existing), c => c.charCodeAt(0));
+  }
+  const buf = new Uint8Array(32);
+  getCryptoOrThrow().getRandomValues(buf);
+  const b64 = btoa(String.fromCharCode(...buf));
+  localStorage.setItem(DEVICE_SECRET_KEY, b64);
+  return buf;
+};
+
+const deriveKey = async (): Promise<CryptoKey> => {
+  const cryptoObj = getCryptoOrThrow();
+  const deviceSecret = getOrCreateDeviceSecret();
+  const salt = textEncoder.encode(location.origin);
+
+  const baseKey = await cryptoObj.subtle.importKey(
+    'raw',
+    deviceSecret,
+    'PBKDF2',
+    false,
+    ['deriveKey']
+  );
+
+  return cryptoObj.subtle.deriveKey(
+    {
+      name: 'PBKDF2',
+      salt,
+      iterations: 100000,
+      hash: 'SHA-256',
+    },
+    baseKey,
+    { name: 'AES-GCM', length: 256 },
+    false,
+    ['encrypt', 'decrypt']
+  );
+};
+
+const encryptToken = async (token: string): Promise<{ ivB64: string; ctB64: string }> => {
+  const cryptoObj = getCryptoOrThrow();
+  const key = await deriveKey();
+  const iv = cryptoObj.getRandomValues(new Uint8Array(12));
+  const ciphertext = await cryptoObj.subtle.encrypt(
+    { name: 'AES-GCM', iv },
+    key,
+    textEncoder.encode(token)
+  );
+  const ivB64 = btoa(String.fromCharCode(...iv));
+  const ctB64 = btoa(String.fromCharCode(...new Uint8Array(ciphertext)));
+  return { ivB64, ctB64 };
+};
+
+const decryptToken = async (ivB64: string, ctB64: string): Promise<string | null> => {
+  try {
+    const cryptoObj = getCryptoOrThrow();
+    const key = await deriveKey();
+    const iv = Uint8Array.from(atob(ivB64), c => c.charCodeAt(0));
+    const ct = Uint8Array.from(atob(ctB64), c => c.charCodeAt(0));
+    const plaintext = await cryptoObj.subtle.decrypt(
+      { name: 'AES-GCM', iv },
+      key,
+      ct
+    );
+    return textDecoder.decode(plaintext);
+  } catch {
+    return null;
+  }
+};
+
+// Get auth token quickly if cached; otherwise null
 const getAuthToken = (): string | null => {
-  return localStorage.getItem('lynx-auth-token');
+  const ctB64 = localStorage.getItem(TOKEN_STORAGE_KEY);
+  const ivB64 = localStorage.getItem(TOKEN_IV_PREFIX + TOKEN_STORAGE_KEY);
+  if (!ctB64 || !ivB64) return null;
+  // Synchronous callers expect a string; we cannot block on async here.
+  // For simplicity, decrypt synchronously via microtask by caching the last token.
+  // We'll maintain a small cache.
+  const cached = (window as any).__lynxTokenCache as { iv: string; ct: string; val: string } | undefined;
+  if (cached && cached.iv === ivB64 && cached.ct === ctB64) {
+    return cached.val;
+  }
+  return null;
 };
 
-// Set auth token in localStorage
+// Async variant for flows that can await (API calls)
+const getAuthTokenAsync = async (): Promise<string | null> => {
+  const cached = getAuthToken();
+  if (cached) return cached;
+  const ctB64 = localStorage.getItem(TOKEN_STORAGE_KEY);
+  const ivB64 = localStorage.getItem(TOKEN_IV_PREFIX + TOKEN_STORAGE_KEY);
+  if (!ctB64 || !ivB64) return null;
+  const val = await decryptToken(ivB64, ctB64);
+  if (val) {
+    (window as any).__lynxTokenCache = { iv: ivB64, ct: ctB64, val };
+  }
+  return val;
+};
+
+// Set auth token (encrypt before storage) and cache plaintext in memory
 const setAuthToken = (token: string): void => {
-  localStorage.setItem('lynx-auth-token', token);
+  encryptToken(token).then(({ ivB64, ctB64 }) => {
+    localStorage.setItem(TOKEN_STORAGE_KEY, ctB64);
+    localStorage.setItem(TOKEN_IV_PREFIX + TOKEN_STORAGE_KEY, ivB64);
+    (window as any).__lynxTokenCache = { iv: ivB64, ct: ctB64, val: token };
+  }).catch(() => {
+    // Fallback: store plaintext if encryption fails, but avoid crashing
+    localStorage.setItem(TOKEN_STORAGE_KEY, token);
+  });
 };
 
-// Remove auth token from localStorage
+// Remove auth token
 const removeAuthToken = (): void => {
-  localStorage.removeItem('lynx-auth-token');
+  localStorage.removeItem(TOKEN_STORAGE_KEY);
+  localStorage.removeItem(TOKEN_IV_PREFIX + TOKEN_STORAGE_KEY);
+  delete (window as any).__lynxTokenCache;
 };
 
 // Base response interface
@@ -85,7 +201,7 @@ interface LinkItem {
 
 // API request helper with auth
 const apiRequest = async <T>(endpoint: string, options: RequestInit = {}): Promise<T> => {
-  const token = getAuthToken();
+  const token = await getAuthTokenAsync();
   const headers: HeadersInit = {
     'Content-Type': 'application/json',
     ...options.headers,
@@ -214,6 +330,22 @@ export const linksApi = {
     return apiRequest<ApiResponse>('/links', {
       method: 'PUT',
       body: JSON.stringify(links),
+    });
+  },
+
+  export: async (): Promise<Blob> => {
+    const token = await getAuthTokenAsync();
+    const resp = await fetch(`${API_BASE}/links/export`, {
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    });
+    if (!resp.ok) throw new Error('Export failed');
+    return await resp.blob();
+  },
+
+  import: async (data: any[]): Promise<ApiResponse> => {
+    return apiRequest<ApiResponse>('/links/import', {
+      method: 'POST',
+      body: JSON.stringify(data),
     });
   },
 };

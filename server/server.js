@@ -37,7 +37,7 @@ function safeJsonParse(jsonString, defaultValue = {}) {
 
 const app = express();
 const PORT = process.env.PORT || 3001;
-const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:3000';
+const FRONTEND_URL = process.env.FRONTEND_URL || `http://localhost:${PORT}`;
 const COOKIE_SECRET = process.env.COOKIE_SECRET || 'dev-cookie-secret';
 
 // Ensure correct client IP detection when behind a proxy/load balancer
@@ -171,8 +171,10 @@ app.post('/api/auth/login', loginLimiter, async (req, res) => {
     
     console.log('Login successful, generating token...');
     const token = generateToken('admin');
+    console.log('Token generated. Length:', token?.length);
     
     // Set secure cookie
+    console.log('Setting signed auth cookie...');
     res.cookie('token', token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
@@ -181,7 +183,12 @@ app.post('/api/auth/login', loginLimiter, async (req, res) => {
       signed: true,
       maxAge: 12 * 60 * 60 * 1000,
     });
-    res.json({ success: true, token });
+    console.log('Cookie set. Sending JSON response...');
+    const body = JSON.stringify({ success: true, token });
+    res.setHeader('Content-Type', 'application/json');
+    res.setHeader('Content-Length', Buffer.byteLength(body));
+    res.status(200).send(body);
+    return;
   } catch (error) {
     console.error('Login error:', error);
     res.status(500).json({ error: 'Login failed' });
@@ -217,12 +224,25 @@ app.get('/api/profile', async (req, res) => {
   try {
     const profile = await dbGet('SELECT * FROM profile_data ORDER BY id DESC LIMIT 1');
     
+    const normalizeAvatar = (avatar) => {
+      if (!avatar || typeof avatar !== 'string') return '/assets/profile-avatar.jpg';
+      // Support data URLs and external URLs
+      if (avatar.startsWith('data:') || avatar.startsWith('http://') || avatar.startsWith('https://')) return avatar;
+      // Normalize old dev path to built assets path
+      if (avatar.includes('/src/assets/profile-avatar')) return '/assets/profile-avatar.jpg';
+      // Ensure leading slash
+      if (!avatar.startsWith('/')) return `/${avatar}`;
+      // If it points to /public during dev, map to dist root file
+      if (avatar.startsWith('/public/')) return avatar.replace('/public/', '/');
+      return avatar;
+    };
+
     if (!profile) {
-      // Return default profile
+      // Return default profile. Use a public path that exists after build.
       return res.json({
         name: "Alex Johnson",
         bio: "Digital creator & entrepreneur sharing my favorite tools and resources. Follow along for the latest in tech, design, and productivity.",
-        avatar: "/src/assets/profile-avatar.jpg",
+        avatar: "/assets/profile-avatar.jpg",
         social_links: {},
         show_avatar: 1
       });
@@ -231,7 +251,7 @@ app.get('/api/profile', async (req, res) => {
     res.json({
       name: profile.name,
       bio: profile.bio,
-      avatar: profile.avatar,
+      avatar: normalizeAvatar(profile.avatar) || '/assets/profile-avatar.jpg',
       social_links: safeJsonParse(profile.social_links, {}),
       show_avatar: profile.show_avatar === 0 ? 0 : 1
     });
@@ -291,15 +311,112 @@ app.get('/api/links', async (req, res) => {
   }
 });
 
+// Export links as JSON
+app.get('/api/links/export', authenticateToken, async (req, res) => {
+  try {
+    const links = await dbAll('SELECT * FROM links ORDER BY sort_order');
+    const payload = links.map((link) => ({
+      id: String(link.id),
+      title: link.title,
+      description: link.description || '',
+      url: link.url || '',
+      type: link.type || 'link',
+      icon: link.icon || null,
+      iconType: link.icon_type || null,
+      backgroundColor: link.background_color || null,
+      textColor: link.text_color || null,
+      size: link.size || null,
+      content: link.content || null,
+      textItems: link.text_items ? JSON.parse(link.text_items) : null,
+      sortOrder: link.sort_order,
+      isActive: link.is_active,
+    }));
+    res.setHeader('Content-Type', 'application/json');
+    res.setHeader('Content-Disposition', 'attachment; filename="links-export.json"');
+    res.status(200).send(JSON.stringify(payload, null, 2));
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to export links' });
+  }
+});
+
+// Import links from JSON
+app.post('/api/links/import', authenticateToken, async (req, res) => {
+  try {
+    if (!Array.isArray(req.body)) {
+      return res.status(400).json({ error: 'Invalid payload: expected an array' });
+    }
+    const incoming = req.body;
+    // Basic shape normalization
+    const normalized = incoming.map((l, i) => ({
+      id: String(l.id ?? i + 1),
+      title: String(l.title ?? ''),
+      description: String(l.description ?? ''),
+      url: String(l.url ?? ''),
+      type: String(l.type ?? 'link'),
+      icon: l.icon ?? null,
+      iconType: l.iconType ?? null,
+      backgroundColor: l.backgroundColor ?? null,
+      textColor: l.textColor ?? null,
+      size: l.size ?? null,
+      content: l.content ?? null,
+      textItems: Array.isArray(l.textItems) ? l.textItems : null,
+    }));
+
+    await dbRun('DELETE FROM links');
+    for (let i = 0; i < normalized.length; i++) {
+      const link = normalized[i];
+      const textItemsValue = Array.isArray(link.textItems)
+        ? JSON.stringify(
+            link.textItems.map((item) =>
+              typeof item === 'string' ? { text: item } : { text: item.text, url: item.url || '' }
+            )
+          )
+        : null;
+      await dbRun(
+        'INSERT INTO links (id, title, description, url, icon, type, text_items, sort_order, is_active, background_color, text_color, size, icon_type, content) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+        [
+          String(link.id),
+          link.title,
+          link.description,
+          link.url,
+          link.icon,
+          link.type,
+          textItemsValue,
+          i,
+          1,
+          link.backgroundColor,
+          link.textColor,
+          link.size,
+          link.iconType,
+          link.content,
+        ]
+      );
+    }
+    res.json({ success: true, count: normalized.length });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to import links' });
+  }
+});
+
 // Define strict validation schema to avoid type confusion
 const LinkSchema = z.object({
-  id: z.number().int().nonnegative(),
+  // Accept string IDs from frontend (Date.now().toString())
+  id: z.union([z.string().min(1), z.number().int().nonnegative()]),
   title: z.string().min(1).max(200),
   description: z.string().max(500).optional().default(''),
   url: z.string().max(2048).optional().default(''),
   icon: z.string().max(200).nullable().optional().default(null),
   type: z.string().min(1).max(50).optional().default('link'),
-  textItems: z.array(z.string().max(200)).nullable().optional(),
+  // Support structured text items [{ text, url? }]
+  textItems: z
+    .array(
+      z.union([
+        z.string().max(200),
+        z.object({ text: z.string().max(200), url: z.string().max(2048).optional() })
+      ])
+    )
+    .nullable()
+    .optional(),
   backgroundColor: z.string().max(50).nullable().optional(),
   textColor: z.string().max(50).nullable().optional(),
   size: z.string().max(20).nullable().optional(),
@@ -322,16 +439,24 @@ app.put('/api/links', authenticateToken, async (req, res) => {
     // Insert new links
     for (let i = 0; i < links.length; i++) {
       const link = links[i];
+      const idValue = typeof link.id === 'string' ? link.id : String(link.id);
+      const textItemsValue = Array.isArray(link.textItems)
+        ? JSON.stringify(
+            link.textItems.map((item) =>
+              typeof item === 'string' ? { text: item } : { text: item.text, url: item.url || '' }
+            )
+          )
+        : null;
       await dbRun(
         'INSERT INTO links (id, title, description, url, icon, type, text_items, sort_order, is_active, background_color, text_color, size, icon_type, content) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
         [
-          link.id,
+          idValue,
           link.title,
           link.description || '',
           link.url || '',
           link.icon || null,
           link.type || 'link',
-          link.textItems ? JSON.stringify(link.textItems) : null,
+          textItemsValue,
           i,
           1,
           link.backgroundColor || null,

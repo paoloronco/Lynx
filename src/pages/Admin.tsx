@@ -103,7 +103,7 @@ const Admin = () => {
           setProfile({
             name: profileData.name,
             bio: profileData.bio,
-            avatar: profileData.avatar,
+            avatar: profileData.avatar || (profileAvatar as string),
             showAvatar: (profileData as any).showAvatar ?? true,
             socialLinks: profileData.social_links || {}
           });
@@ -202,8 +202,8 @@ const Admin = () => {
         content: link.content,
         textItems: link.textItems
       }));
-      await linksApi.update(formattedLinks);
       setLinks(newLinks);
+      await linksApi.update(formattedLinks);
     } catch (error: any) {
       if (error?.message === 'AUTH_EXPIRED') {
         setIsLoggedIn(false);

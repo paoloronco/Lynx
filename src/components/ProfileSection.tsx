@@ -128,7 +128,11 @@ export const ProfileSection = ({ profile, onProfileUpdate }: ProfileSectionProps
       <div className="relative inline-block mb-6">
         {current.showAvatar !== false && (
         <Avatar className="w-24 h-24">
-          <AvatarImage src={current.avatar || profileAvatar} alt={current.name} />
+          <AvatarImage
+            src={current.avatar || profileAvatar}
+            alt={current.name}
+            onError={(e) => { (e.target as HTMLImageElement).src = '/placeholder.svg'; }}
+          />
           <AvatarFallback className="text-2xl font-bold gradient-text">
             {current.name.charAt(0) || 'U'}
           </AvatarFallback>

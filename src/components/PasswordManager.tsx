@@ -62,10 +62,7 @@ export const PasswordManager = () => {
           text: successMessage
         });
         
-        // Update token if a new one was returned
-        if (result.token) {
-          localStorage.setItem('lynx-auth-token', result.token);
-        }
+        // Token handling is centralized in authApi; no direct localStorage writes here
         
         // Redirect to admin panel after a short delay
         setTimeout(() => {
@@ -108,9 +105,11 @@ export const PasswordManager = () => {
   };
 
   const clearAllAuthData = () => {
-    // Clear all auth-related data from localStorage
+    // Clear all auth-related data from storage (plaintext and encrypted)
     localStorage.removeItem('lynx-auth-token');
-    // Add any other auth-related items that need to be cleared
+    localStorage.removeItem('lynx-auth-iv-lynx-auth-token');
+    localStorage.removeItem('lynx-device-secret');
+    sessionStorage.removeItem('lynx-auth-token');
   };
   
   const attemptForceReset = async (): Promise<void> => {

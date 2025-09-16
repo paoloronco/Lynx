@@ -2,7 +2,7 @@
 
 ### Your personal links hub
 
-[![Version](https://img.shields.io/badge/version-3.0.0-blue.svg)](https://github.com/paoloronco/Lynx)
+[![Version](https://img.shields.io/badge/version-3.1.0-blue.svg)](https://github.com/paoloronco/Lynx)
 
 **Lynx** is an open-source, self-hosted link manager that helps you gather all your digital touchpoints in a single page, with secure authentication and a fully customizable design.
 
@@ -169,7 +169,7 @@ Your app will be available at a URL like: https://your-app.onrender.com
 
 ## 📝 Changelog
 
-### v3.0.0
+### v3.1.0
 
 ### 🔧 Admin
 - Interface title updated to: **“Lynx - Your personal links hub”**
@@ -178,17 +178,20 @@ Your app will be available at a URL like: https://your-app.onrender.com
   - Bio now supports **line breaks** (`whitespace-pre-line`)
   - Empty bio is automatically hidden (no blank space left)
   - Social links work properly → hidden if empty
+  - Profile picture bug fix
 - **Links**
   - Text color is now applied consistently across the entire card (title, description, URL)
   - Support for **emoji** or **PNG images** next to each link
   - Improved **Text Card** rendering: each link is displayed on two lines  
     → Name on top, URL below (indented with horizontal scroll for long URLs)
+  - Ability to export/import Links & Profile as Json 
 - **Theme**
   - Removed duplicate *“Content”* tab (was a duplicate of name + bio)
   - **Export/Import** now correctly saves and restores themes
 - **UI**
   - Footer updated to:  
     `Powered by Lynx | Lynx - Your personal links hub`
+
 
 ### 🚀 Demo
 - Demo is fully functional, but **password change is disabled**
@@ -203,7 +206,7 @@ Your app will be available at a URL like: https://your-app.onrender.com
   - Option to choose the placement of profile elements (name, bio, avatar, etc.)
 - **Links**
   - Ability to center text and customize its alignment within cards
-  - Ability to export/import Links & Profile as Json
+
 - **Themes**
   - Further improvements to theme usability and customization
   - Enhanced personalization options for layouts, colors, and styles
