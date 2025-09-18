@@ -20,6 +20,11 @@ const getIconUrl = (iconPath?: string | null) => {
     return iconPath;
   }
   
+  // If it's an absolute path (starts with '/'), return as-is so we don't duplicate /uploads
+  if (iconPath.startsWith('/')) {
+    return iconPath;
+  }
+  
   // For relative paths, assume they're in the uploads directory
   return `/uploads/${iconPath.replace(/^\/+/, '')}`;
 };
@@ -92,35 +97,27 @@ export const PublicLinkCard = ({ link }: PublicLinkCardProps) => {
 
   // Determine what to show in the icon area
   const renderIcon = () => {
+    // If no icon or there was an error loading it, show a fallback initial
     if (!iconUrl || imageError) {
-      // If no icon URL or error loading image, show fallback
       return (
-        <div className="w-8 h-8 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
+        <div className="w-8 h-8 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center overflow-hidden">
           <span className="text-lg leading-none opacity-70">
             {link.title ? link.title.charAt(0).toUpperCase() : '?'}
           </span>
         </div>
       );
     }
-
-    // If we have an icon URL, render it with proper error handling
+    // If we have an icon URL, render it with proper error handling. Use full-size image filling the container to avoid layout clipping.
     return (
-      <div className="w-5 h-5 flex items-center justify-center bg-white/10 rounded overflow-hidden">
-        <img 
-          src={iconUrl} 
-          alt={link.title || 'Link icon'} 
-          className="w-8 h-8 object-cover rounded-full" 
+      <div className="w-8 h-8 flex items-center justify-center bg-white/10 rounded-full overflow-hidden">
+        <img
+          src={iconUrl}
+          alt={link.title || 'Link icon'}
+          className="w-full h-full object-cover rounded-full"
           onError={() => {
             console.error('Error loading image:', iconUrl);
             setImageError(true);
           }}
-          onLoad={(e) => {
-            console.log('Successfully loaded icon:', iconUrl);
-            const target = e.target as HTMLImageElement;
-            target.style.display = 'block';
-            setImageError(false);
-          }}
-          style={{ display: 'none' }} // Start hidden to prevent flash of broken image
         />
       </div>
     );
@@ -134,7 +131,7 @@ export const PublicLinkCard = ({ link }: PublicLinkCardProps) => {
     >
       <div className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-3 flex-1 min-w-0">
-          <div className="flex-shrink-0 w-5 h-5 flex items-center justify-center overflow-hidden rounded">
+          <div className="flex-shrink-0 w-8 h-8 flex items-center justify-center overflow-hidden rounded">
             {renderIcon()}
           </div>
           <div className="flex-1 min-w-0">

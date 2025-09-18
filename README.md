@@ -171,7 +171,7 @@ Your app will be available at a URL like: https://your-app.onrender.com
 
 ## 📝 Changelog
 
-### v3.2.0
+### v3.2.1
 
 ### 🔧 Admin
 - Interface title updated to: **“Lynx - Your personal links hub”**
@@ -184,6 +184,7 @@ Your app will be available at a URL like: https://your-app.onrender.com
   - Improved **Text Card** rendering: each link is displayed on two lines
     → Name on top, URL below (indented with horizontal scroll for long URLs)
   - Bug fixes in rendering icons, removing cards, and updating links
+  - Bug fix: image/emoji next to link not working
   - Ability to export/import Links as Json
 - **Theme**
   - Removed duplicate *“Content”* tab (was a duplicate of name + bio)
@@ -207,8 +208,6 @@ Your app will be available at a URL like: https://your-app.onrender.com
   - Bug fix: profile picture not working
 - **Links**
   - Ability to center text and customize its alignment within cards
-  - Bug fix: image/emoji next to link not working
-
 - **Themes**
   - Further improvements to theme usability and customization
   - Enhanced personalization options for layouts, colors, and styles

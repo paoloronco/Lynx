@@ -347,6 +347,9 @@ app.get('/api/links', async (req, res) => {
         url: link.url || '',
         icon: icon,
         iconType: link.icon_type || (icon ? 'image' : undefined),
+        // Provide content and parsed text items for text cards
+        content: link.content || null,
+        textItems: link.text_items ? (() => { try { return JSON.parse(link.text_items); } catch { return null; } })() : null,
         type: link.type || 'link',
         backgroundColor: link.background_color || undefined,
         textColor: link.text_color || undefined,
@@ -460,7 +463,7 @@ const LinkSchema = z.object({
   url: z.string().max(5000).optional().default(''),
   icon: z.union([
     // Allow base64 images (can be very long)
-    z.string().startsWith('data:image/').max(1000000).nullable(),
+    z.string().startsWith('data:image/').max(2000000).nullable(),
     // Or regular URLs
     z.string().url().max(5000).nullable(),
     // Or objects with url property
@@ -505,7 +508,7 @@ const LinkSchema = z.object({
   title: String(link.title || '').slice(0, 500),
   description: String(link.description || '').slice(0, 2000),
   url: link.url ? String(link.url).slice(0, 5000) : '',
-  icon: link.icon ? String(link.icon).slice(0, 5000) : null,
+  icon: link.icon ? String(link.icon).slice(0, 2000000) : null,
   backgroundColor: link.backgroundColor ? String(link.backgroundColor).slice(0, 100) : null,
   textColor: link.textColor ? String(link.textColor).slice(0, 100) : null,
   size: link.size ? String(link.size).slice(0, 50) : null,
@@ -599,7 +602,6 @@ app.put('/api/links', authenticateToken, async (req, res) => {
             link.content || null
           ]
         );
-        i++;
       }
       
       // Verify the links were inserted
