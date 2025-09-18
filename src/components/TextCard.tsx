@@ -13,9 +13,11 @@ interface TextCardProps {
   onUpdate: (link: LinkData) => void;
   onDelete: (id: string) => void;
   isDragging?: boolean;
+  onMoveUp?: () => void;
+  onMoveDown?: () => void;
 }
 
-export const TextCard = ({ link, onUpdate, onDelete, isDragging }: TextCardProps) => {
+export const TextCard = ({ link, onUpdate, onDelete, isDragging, onMoveUp, onMoveDown }: TextCardProps) => {
   const [isEditing, setIsEditing] = useState(false);
   const [editLink, setEditLink] = useState(link);
 
@@ -329,6 +331,28 @@ export const TextCard = ({ link, onUpdate, onDelete, isDragging }: TextCardProps
             </div>
             
             <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-smooth" onClick={(e) => e.stopPropagation()}>
+              {onMoveUp && (
+                <Button
+                  onClick={() => onMoveUp?.()}
+                  variant="ghost"
+                  size="icon"
+                  className="w-8 h-8"
+                  title="Move up"
+                >
+                  ▲
+                </Button>
+              )}
+              {onMoveDown && (
+                <Button
+                  onClick={() => onMoveDown?.()}
+                  variant="ghost"
+                  size="icon"
+                  className="w-8 h-8"
+                  title="Move down"
+                >
+                  ▼
+                </Button>
+              )}
               <Button
                 onClick={() => setIsEditing(true)}
                 variant="ghost"

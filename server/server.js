@@ -3,7 +3,7 @@ import cors from 'cors';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import bcrypt from 'bcryptjs';
-import { initializeDatabase, dbGet, dbAll, dbRun } from './database.js';
+import { initializeDatabase, dbGet, dbAll, dbRun, withTransaction } from './database.js';
 import {
   isFirstTimeSetup,
   setupInitialCredentials,
@@ -18,6 +18,9 @@ import rateLimit from 'express-rate-limit';
 import { z } from 'zod';
 import { timingSafeEqual } from 'crypto';
 import cookieParser from 'cookie-parser';
+import multer from 'multer';
+import fs from 'fs';
+import path from 'path';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -68,7 +71,28 @@ app.use(helmet({
 }));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ limit: '10mb', extended: true }));
-app.use(express.static(join(__dirname, '../dist')));
+// Serve static files with proper path resolution
+const distPath = join(__dirname, '../dist');
+const uploadsPath = join(__dirname, 'uploads');
+
+console.log('Serving static files from:', distPath);
+console.log('Serving uploads from:', uploadsPath);
+
+// Ensure uploads directory exists
+if (!fs.existsSync(uploadsPath)) {
+  fs.mkdirSync(uploadsPath, { recursive: true });
+  console.log('Created uploads directory at:', uploadsPath);
+}
+
+// Serve static files from the dist directory
+app.use(express.static(distPath));
+
+// Serve uploaded files from the uploads directory
+app.use('/uploads', express.static(uploadsPath, {
+  setHeaders: (res) => {
+    res.set('Cache-Control', 'public, max-age=31536000');
+  }
+}));
 app.use(cookieParser(COOKIE_SECRET));
 
 // Rate limiting
@@ -222,6 +246,9 @@ app.post('/api/auth/verify', authLimiter, authenticateToken, async (req, res) =>
 // Profile Routes
 app.get('/api/profile', async (req, res) => {
   try {
+    res.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    res.set('Pragma', 'no-cache');
+    res.set('Expires', '0');
     const profile = await dbGet('SELECT * FROM profile_data ORDER BY id DESC LIMIT 1');
     
     const normalizeAvatar = (avatar) => {
@@ -262,8 +289,14 @@ app.get('/api/profile', async (req, res) => {
 
 app.put('/api/profile', authenticateToken, async (req, res) => {
   try {
-    const { name, bio, avatar, socialLinks, showAvatar } = req.body;
-    
+    // Accept both camelCase and snake_case payloads from different frontend versions
+    const name = req.body.name;
+    const bio = req.body.bio;
+    const avatar = req.body.avatar;
+    const socialLinks = req.body.socialLinks ?? req.body.social_links ?? {};
+    const showAvatarRaw = req.body.showAvatar ?? req.body.show_avatar;
+    const showAvatar = typeof showAvatarRaw === 'number' ? showAvatarRaw !== 0 : !!showAvatarRaw;
+
     // Check if profile exists
     const existing = await dbGet('SELECT id FROM profile_data LIMIT 1');
     
@@ -288,22 +321,42 @@ app.put('/api/profile', authenticateToken, async (req, res) => {
 // Links Routes
 app.get('/api/links', async (req, res) => {
   try {
-    const links = await dbAll('SELECT * FROM links WHERE is_active = 1 ORDER BY sort_order');
+    // Prevent all caching
+    res.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0, s-maxage=0');
+    res.set('Pragma', 'no-cache');
+    res.set('Expires', '0');
+    res.set('Surrogate-Control', 'no-store');
+    res.set('Vary', '*');
+    res.set('Last-Modified', new Date().toUTCString());
     
-    const formattedLinks = links.map(link => ({
-      id: link.id,
-      title: link.title,
-      description: link.description || '',
-      url: link.url,
-      type: link.type || 'link',
-      icon: link.icon,
-      iconType: link.icon_type || undefined,
-      backgroundColor: link.background_color || undefined,
-      textColor: link.text_color || undefined,
-      size: link.size || undefined,
-      content: link.content || undefined,
-      textItems: link.text_items ? JSON.parse(link.text_items) : undefined
-    }));
+    console.log('[/api/links] Fetching links from database...');
+    const links = await dbAll('SELECT * FROM links WHERE is_active = 1 ORDER BY sort_order');
+    console.log(`[/api/links] Found ${links.length} links in database`);
+    
+    // Format links for response
+    const formattedLinks = links.map(link => {
+      // Check if icon is base64 data URL and ensure it's preserved
+      const icon = link.icon && (link.icon.startsWith('data:image/') || link.icon.startsWith('blob:')) 
+        ? link.icon 
+        : link.icon || null;
+        
+      return {
+        id: link.id,
+        title: link.title,
+        description: link.description || '',
+        url: link.url || '',
+        icon: icon,
+        iconType: link.icon_type || (icon ? 'image' : undefined),
+        type: link.type || 'link',
+        backgroundColor: link.background_color || undefined,
+        textColor: link.text_color || undefined,
+        order: link.link_order || 0,
+        size: link.size || 'medium',
+        isActive: link.is_active !== 0,
+        createdAt: link.created_at,
+        updatedAt: link.updated_at
+      };
+    });
     
     res.json(formattedLinks);
   } catch (error) {
@@ -402,84 +455,191 @@ app.post('/api/links/import', authenticateToken, async (req, res) => {
 const LinkSchema = z.object({
   // Accept string IDs from frontend (Date.now().toString())
   id: z.union([z.string().min(1), z.number().int().nonnegative()]),
-  title: z.string().min(1).max(200),
-  description: z.string().max(500).optional().default(''),
-  url: z.string().max(2048).optional().default(''),
-  icon: z.string().max(200).nullable().optional().default(null),
+  title: z.string().min(1).max(500),
+  description: z.string().max(2000).optional().default(''),
+  url: z.string().max(5000).optional().default(''),
+  icon: z.union([
+    // Allow base64 images (can be very long)
+    z.string().startsWith('data:image/').max(1000000).nullable(),
+    // Or regular URLs
+    z.string().url().max(5000).nullable(),
+    // Or objects with url property
+    z.object({
+      url: z.string().max(5000)
+    }).transform(obj => obj.url)
+  ]).nullable().optional().default(null),
   type: z.string().min(1).max(50).optional().default('link'),
+  iconType: z.union([
+    z.string().max(50),
+    z.object({
+      type: z.string().max(50)
+    }).transform(obj => obj.type)
+  ]).optional().default(undefined),
   // Support structured text items [{ text, url? }]
   textItems: z
     .array(
       z.union([
-        z.string().max(200),
-        z.object({ text: z.string().max(200), url: z.string().max(2048).optional() })
+        z.string().max(1000),
+        z.object({ 
+          text: z.string().max(1000), 
+          url: z.string().max(5000).optional() 
+        })
       ])
     )
     .nullable()
-    .optional(),
-  backgroundColor: z.string().max(50).nullable().optional(),
-  textColor: z.string().max(50).nullable().optional(),
-  size: z.string().max(20).nullable().optional(),
-  iconType: z.string().max(50).nullable().optional(),
-  content: z.string().max(5000).nullable().optional(),
-}).strip();
+    .optional()
+    .transform(items => 
+      items ? items.map(item => ({
+        ...(typeof item === 'string' ? { text: item } : item),
+        text: String(item.text || '').slice(0, 1000),
+        url: item.url ? String(item.url).slice(0, 5000) : undefined
+      })) : null
+    ),
+  backgroundColor: z.string().max(100).nullable().optional(),
+  textColor: z.string().max(100).nullable().optional(),
+  size: z.string().max(50).nullable().optional(),
+  iconType: z.string().max(100).nullable().optional(),
+  content: z.string().max(10000).nullable().optional(),
+}).strip().transform(link => ({
+  ...link,
+  title: String(link.title || '').slice(0, 500),
+  description: String(link.description || '').slice(0, 2000),
+  url: link.url ? String(link.url).slice(0, 5000) : '',
+  icon: link.icon ? String(link.icon).slice(0, 5000) : null,
+  backgroundColor: link.backgroundColor ? String(link.backgroundColor).slice(0, 100) : null,
+  textColor: link.textColor ? String(link.textColor).slice(0, 100) : null,
+  size: link.size ? String(link.size).slice(0, 50) : null,
+  iconType: link.iconType ? String(link.iconType).slice(0, 100) : null,
+  content: link.content ? String(link.content).slice(0, 10000) : null
+}));
 const LinksPayloadSchema = z.array(LinkSchema).max(200);
 
 app.put('/api/links', authenticateToken, async (req, res) => {
   try {
+    console.log('[/api/links] Received request to update links');
     if (!Array.isArray(req.body)) {
+      console.error('[/api/links] Error: Request body is not an array');
       return res.status(400).json({ error: 'Request body must be an array of links.' });
     }
+    console.log(`[/api/links] Received ${req.body.length} links to update`);
     
-    const links = LinksPayloadSchema.parse(req.body);
+    // Parse with detailed error logging
+    const parseResult = LinksPayloadSchema.safeParse(req.body);
+    if (!parseResult.success) {
+      console.error('[/api/links] Validation errors:', JSON.stringify(parseResult.error.issues, null, 2));
+      
+      // Log the first few problematic values
+      const firstError = parseResult.error.issues[0];
+      if (firstError) {
+        const path = firstError.path.join('.');
+        console.error(`[/api/links] Problem with field '${path}':`, firstError.message);
+        if (firstError.path.length > 0) {
+          const field = firstError.path[firstError.path.length - 1];
+          const exampleItem = req.body[0];
+          if (exampleItem && exampleItem[field] !== undefined) {
+            console.error(`[/api/links] Example value (first 100 chars):`, 
+              String(exampleItem[field]).substring(0, 100));
+          }
+        }
+      }
+      
+      return res.status(400).json({ 
+        error: 'Invalid links payload',
+        details: parseResult.error.issues 
+      });
+    }
     
-    // Delete all existing links
-    await dbRun('DELETE FROM links');
+    const links = parseResult.data;
     
-    // Insert new links
-    for (let i = 0; i < links.length; i++) {
-      const link = links[i];
-      const idValue = typeof link.id === 'string' ? link.id : String(link.id);
-      const textItemsValue = Array.isArray(link.textItems)
-        ? JSON.stringify(
-            link.textItems.map((item) =>
-              typeof item === 'string' ? { text: item } : { text: item.text, url: item.url || '' }
+    // Use transaction helper for better transaction management
+    const result = await withTransaction(async () => {
+      console.log('[/api/links] Starting transaction');
+      
+      // Delete existing links
+      console.log('[/api/links] Deleting existing links');
+      await dbRun('DELETE FROM links');
+      
+      // Insert new links
+      console.log(`[/api/links] Inserting ${links.length} new links`);
+      for (let i = 0; i < links.length; i++) {
+        const link = links[i];
+        const idValue = typeof link.id === 'string' ? link.id : String(link.id);
+        console.log(`[/api/links] Inserting link ${i + 1}/${links.length}: ${link.title}`);
+        
+        // Handle base64 image data
+        const iconValue = (link.icon && typeof link.icon === 'string' && 
+          (link.icon.startsWith('data:image/') || link.icon.startsWith('blob:')))
+          ? link.icon
+          : (link.icon || null);
+          
+        const textItemsValue = Array.isArray(link.textItems)
+          ? JSON.stringify(
+              link.textItems.map((item) =>
+                typeof item === 'string' ? { text: item } : { text: item.text, url: item.url || '' }
+              )
             )
-          )
-        : null;
-      await dbRun(
-        'INSERT INTO links (id, title, description, url, icon, type, text_items, sort_order, is_active, background_color, text_color, size, icon_type, content) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-        [
-          idValue,
-          link.title,
-          link.description || '',
-          link.url || '',
-          link.icon || null,
-          link.type || 'link',
-          textItemsValue,
-          i,
-          1,
-          link.backgroundColor || null,
-          link.textColor || null,
-          link.size || null,
-          link.iconType || null,
-          link.content || null
-        ]
-      );
+          : null;
+          
+        await dbRun(
+          'INSERT INTO links (id, title, description, url, icon, type, text_items, sort_order, is_active, background_color, text_color, size, icon_type, content) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+          [
+            typeof link.id === 'string' ? link.id : String(link.id),
+            link.title,
+            link.description || '',
+            link.url || '',
+            iconValue,
+            link.type || 'link',
+            textItemsValue,
+            i,
+            1,
+            link.backgroundColor || null,
+            link.textColor || null,
+            link.size || null,
+            link.iconType || (iconValue ? 'image' : null),
+            link.content || null
+          ]
+        );
+        i++;
+      }
+      
+      // Verify the links were inserted
+      const countRow = await dbGet('SELECT COUNT(*) as cnt FROM links');
+      const count = countRow?.cnt ?? 0;
+      console.log(`[/api/links] Successfully inserted ${count} links`);
+      
+      if (count !== links.length) {
+        throw new Error(`Expected to insert ${links.length} links but only inserted ${count}`);
+      }
+      
+      return { count };
+    });
+    
+    // If we get here, the transaction was successful
+    res.json({ success: true, count: result.count });
+    
+  } catch (error) {
+    console.error('[/api/links] Error updating links:', error);
+    
+    if (error instanceof z.ZodError) {
+      return res.status(400).json({ 
+        error: 'Invalid links payload', 
+        details: error.errors 
+      });
     }
     
-    res.json({ success: true });
-  } catch (error) {
-    if (error instanceof z.ZodError) {
-      return res.status(400).json({ error: 'Invalid links payload', details: error.errors });
-    }
-    res.status(500).json({ error: 'Failed to save links' });
+    res.status(500).json({ 
+      error: 'Failed to save links',
+      message: error.message 
+    });
   }
 });
 
 // Theme Routes
 app.get('/api/theme', async (req, res) => {
   try {
+    res.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    res.set('Pragma', 'no-cache');
+    res.set('Expires', '0');
     const theme = await dbGet('SELECT * FROM theme_config ORDER BY id DESC LIMIT 1');
     
     if (!theme) {
@@ -829,6 +989,113 @@ const spaLimiter = rateLimit({
   message: { success: false, error: "Too many requests, please try again later." },
 });
 
+// Configure multer for file uploads
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    const uploadDir = join(__dirname, 'uploads');
+    // Create uploads directory if it doesn't exist
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir, { recursive: true });
+    }
+    cb(null, uploadDir);
+  },
+  filename: function (req, file, cb) {
+    // Generate unique filename with original extension
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    cb(null, 'img-' + uniqueSuffix + path.extname(file.originalname).toLowerCase());
+  }
+});
+
+const upload = multer({ 
+  storage: storage,
+  limits: {
+    fileSize: 5 * 1024 * 1024, // 5MB limit
+  },
+  fileFilter: (req, file, cb) => {
+    // Accept images only
+    if (!file.originalname.match(/\.(jpg|jpeg|png|gif|webp|svg)$/i)) {
+      return cb(new Error('Only image files are allowed!'), false);
+    }
+    cb(null, true);
+  }
+});
+
+// File upload endpoint
+app.post('/api/upload', authenticateToken, upload.single('file'), async (req, res) => {
+  try {
+    console.log('Upload request received. Files:', req.files);
+    console.log('Request body:', req.body);
+    
+    if (!req.file) {
+      console.error('No file received in upload. Check if the field name is correct (should be "file")');
+      return res.status(400).json({ error: 'No file uploaded' });
+    }
+
+    const fileInfo = {
+      originalname: req.file.originalname,
+      filename: req.file.filename,
+      path: req.file.path,
+      size: req.file.size,
+      mimetype: req.file.mimetype,
+      encoding: req.file.encoding
+    };
+    
+    console.log('File uploaded successfully:', fileInfo);
+    console.log('Upload directory contents:', fs.readdirSync(uploadsPath));
+
+    // Verify file exists
+    if (!fs.existsSync(req.file.path)) {
+      console.error('File was not saved to disk. Expected at:', req.file.path);
+      console.error('Current working directory:', process.cwd());
+      return res.status(500).json({ 
+        error: 'Failed to save file',
+        details: 'The file was not saved to the expected location.'
+      });
+    }
+
+    // Set file permissions (Windows compatible)
+    try {
+      fs.chmodSync(req.file.path, 0o666); // Read/write for all
+      console.log('File permissions set successfully');
+    } catch (err) {
+      console.warn('Could not set file permissions:', err.message);
+    }
+
+    // Get the URL to access the uploaded file
+    const fileUrl = `/uploads/${req.file.filename}`;
+    
+    // Verify the URL is accessible
+    const fullUrl = `${req.protocol}://${req.get('host')}${fileUrl}`;
+    console.log('File available at:', fullUrl);
+    
+    res.json({ 
+      success: true, 
+      filePath: fileUrl,
+      fullUrl: fullUrl,
+      fileName: req.file.filename
+    });
+  } catch (error) {
+    console.error('Upload error:', error);
+    res.status(500).json({ 
+      error: 'Failed to upload file',
+      details: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+});
+
+// Error handling middleware
+app.use((err, req, res, next) => {
+  if (err instanceof multer.MulterError) {
+    // A Multer error occurred when uploading
+    return res.status(400).json({ error: err.message });
+  } else if (err) {
+    // An unknown error occurred
+    return res.status(500).json({ error: err.message || 'File upload failed' });
+  }
+  next();
+});
+
+// Catch-all route for SPA
 app.get('*', spaLimiter, (req, res) => {
   res.sendFile(join(__dirname, '../dist/index.html'));
 });

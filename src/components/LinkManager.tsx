@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Plus, Link, Type, Upload, Download } from "lucide-react";
@@ -7,6 +7,7 @@ import { TextCard } from "./TextCard";
 
 interface LinkManagerProps {
   links: LinkData[];
+  // Called only when user clicks Save
   onLinksUpdate: (links: LinkData[]) => void;
 }
 
@@ -14,6 +15,16 @@ export const LinkManager = ({ links, onLinksUpdate }: LinkManagerProps) => {
   const [draggedItem, setDraggedItem] = useState<string | null>(null);
   const [dragOverId, setDragOverId] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  // Maintain a working copy to allow fluid drag reordering without spamming saves
+  const [workingLinks, setWorkingLinks] = useState<LinkData[]>(links);
+  const [isDirty, setIsDirty] = useState(false);
+
+  // Keep working copy in sync when parent provides a new links array
+  useEffect(() => {
+    // Replace working copy only when the incoming prop reference changes
+    setWorkingLinks(links);
+    setIsDirty(false);
+  }, [links]);
 
   const addNewLink = () => {
     const newLink: LinkData = {
@@ -23,7 +34,9 @@ export const LinkManager = ({ links, onLinksUpdate }: LinkManagerProps) => {
       url: "",
       type: "link",
     };
-    onLinksUpdate([...links, newLink]);
+    const updated = [...workingLinks, newLink];
+    setWorkingLinks(updated);
+    setIsDirty(true);
   };
 
   const addNewTextCard = () => {
@@ -35,19 +48,23 @@ export const LinkManager = ({ links, onLinksUpdate }: LinkManagerProps) => {
       type: "text",
       content: "",
     };
-    onLinksUpdate([...links, newTextCard]);
+    const updated = [...workingLinks, newTextCard];
+    setWorkingLinks(updated);
+    setIsDirty(true);
   };
 
   const updateLink = (updatedLink: LinkData) => {
-    const updatedLinks = links.map(link => 
-      link.id === updatedLink.id ? updatedLink : link
+    const updatedLinks = workingLinks.map(link => 
+      String(link.id) === String(updatedLink.id) ? updatedLink : link
     );
-    onLinksUpdate(updatedLinks);
+    setWorkingLinks(updatedLinks);
+    setIsDirty(true);
   };
 
   const deleteLink = (id: string) => {
-    const updatedLinks = links.filter(link => link.id !== id);
-    onLinksUpdate(updatedLinks);
+    const updatedLinks = workingLinks.filter(link => String(link.id) !== String(id));
+    setWorkingLinks(updatedLinks);
+    setIsDirty(true);
   };
 
   const handleDragStart = (e: React.DragEvent, id: string) => {
@@ -62,21 +79,24 @@ export const LinkManager = ({ links, onLinksUpdate }: LinkManagerProps) => {
 
   const performReorder = (fromId: string, toId: string) => {
     if (!fromId || !toId || fromId === toId) return;
-    const draggedIndex = links.findIndex(link => link.id === fromId);
-    const targetIndex = links.findIndex(link => link.id === toId);
+    const draggedIndex = workingLinks.findIndex(link => String(link.id) === String(fromId));
+    const targetIndex = workingLinks.findIndex(link => String(link.id) === String(toId));
     if (draggedIndex === -1 || targetIndex === -1) return;
-    const newLinks = [...links];
+    const newLinks = [...workingLinks];
     const [draggedLink] = newLinks.splice(draggedIndex, 1);
     newLinks.splice(targetIndex, 0, draggedLink);
-    onLinksUpdate(newLinks);
+    setWorkingLinks(newLinks);
+    setIsDirty(true);
+    return newLinks;
   };
 
   const handleDrop = (e: React.DragEvent, targetId: string) => {
     e.preventDefault();
     if (!draggedItem || draggedItem === targetId) return;
-    performReorder(draggedItem, targetId);
+    const newOrder = performReorder(draggedItem, targetId);
     setDraggedItem(null);
     setDragOverId(null);
+    // Do not persist here; wait for explicit Save
   };
 
   const handleDragEnd = () => {
@@ -87,7 +107,7 @@ export const LinkManager = ({ links, onLinksUpdate }: LinkManagerProps) => {
   const handleDragEnter = (targetId: string) => {
     if (!draggedItem || draggedItem === targetId) return;
     setDragOverId(targetId);
-    // Reorder live as we drag over items for fluid UX
+    // Reorder locally for fluid UX; do not persist until drop
     performReorder(draggedItem, targetId);
   };
 
@@ -138,14 +158,21 @@ export const LinkManager = ({ links, onLinksUpdate }: LinkManagerProps) => {
   };
 
   const moveByOffset = (id: string, delta: number) => {
-    const index = links.findIndex(l => l.id === id);
+    const index = workingLinks.findIndex(l => String(l.id) === String(id));
     if (index === -1) return;
-    const newIndex = Math.max(0, Math.min(links.length - 1, index + delta));
+    const newIndex = Math.max(0, Math.min(workingLinks.length - 1, index + delta));
     if (newIndex === index) return;
-    const newLinks = [...links];
+    const newLinks = [...workingLinks];
     const [item] = newLinks.splice(index, 1);
     newLinks.splice(newIndex, 0, item);
-    onLinksUpdate(newLinks);
+    setWorkingLinks(newLinks);
+    setIsDirty(true);
+  };
+
+  const handleSave = () => {
+    if (!isDirty) return;
+    onLinksUpdate(workingLinks);
+    setIsDirty(false);
   };
 
   return (
@@ -169,6 +196,9 @@ export const LinkManager = ({ links, onLinksUpdate }: LinkManagerProps) => {
             <Type className="w-4 h-4" />
             Add Text
           </Button>
+          <Button onClick={handleSave} variant="default" className="gap-2" disabled={!isDirty || busy}>
+            Save
+          </Button>
           <Button onClick={exportLinks} variant="outline" className="gap-2" disabled={busy}>
             <Download className="w-4 h-4" /> Export
           </Button>
@@ -178,7 +208,7 @@ export const LinkManager = ({ links, onLinksUpdate }: LinkManagerProps) => {
         </div>
       </div>
 
-      {links.length === 0 ? (
+      {workingLinks.length === 0 ? (
         <Card className="glass-card p-8 text-center">
             <div className="space-y-4">
               <div className="text-4xl opacity-50">📝</div>
@@ -202,7 +232,7 @@ export const LinkManager = ({ links, onLinksUpdate }: LinkManagerProps) => {
         </Card>
       ) : (
         <div className="flex flex-col" style={{ gap: 'var(--card-spacing)' }}>
-          {links.map((link) => (
+          {workingLinks.map((link) => (
             <div
               key={link.id}
               draggable
@@ -219,6 +249,8 @@ export const LinkManager = ({ links, onLinksUpdate }: LinkManagerProps) => {
                   onUpdate={updateLink}
                   onDelete={deleteLink}
                   isDragging={draggedItem === link.id}
+                  onMoveUp={() => moveByOffset(link.id, -1)}
+                  onMoveDown={() => moveByOffset(link.id, 1)}
                 />
               ) : (
                 <LinkCard

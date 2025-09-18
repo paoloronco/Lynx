@@ -114,7 +114,7 @@ const Admin = () => {
         
         if (linksData && linksData.length > 0) {
           const formattedLinks = linksData.map(link => ({
-            id: link.id,
+            id: String(link.id),
             title: link.title,
             description: link.description || '',
             url: link.url,
@@ -189,7 +189,7 @@ const Admin = () => {
     try {
       // Format the links for the API
       const formattedLinks = newLinks.map(link => ({
-        id: link.id,
+        id: String(link.id),
         title: link.title,
         description: link.description,
         url: link.url,
@@ -202,8 +202,25 @@ const Admin = () => {
         content: link.content,
         textItems: link.textItems
       }));
-      setLinks(newLinks);
+      // Persist first; only update local state if backend succeeds
       await linksApi.update(formattedLinks);
+      // Re-fetch from backend to guarantee public and admin are in sync
+      const reloaded = await linksApi.get();
+      const normalized = (reloaded || []).map(link => ({
+        id: String(link.id),
+        title: link.title,
+        description: link.description || '',
+        url: link.url,
+        type: link.type as 'link' | 'text',
+        icon: link.icon,
+        iconType: link.iconType,
+        backgroundColor: link.backgroundColor,
+        textColor: link.textColor,
+        size: link.size,
+        content: link.content,
+        textItems: link.textItems
+      }));
+      setLinks(normalized);
     } catch (error: any) {
       if (error?.message === 'AUTH_EXPIRED') {
         setIsLoggedIn(false);

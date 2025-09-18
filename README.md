@@ -4,6 +4,8 @@
 
 [![Version](https://img.shields.io/badge/version-3.1.0-blue.svg)](https://github.com/paoloronco/Lynx)
 
+<a href="https://www.producthunt.com/products/github-182?embed=true&utm_source=badge-featured&utm_medium=badge&utm_source=badge-lynx&#0045;6" target="_blank"><img src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=1015536&theme=light&t=1758113807582" alt="Lynx - Your&#0032;personal&#0032;link&#0032;hub&#0032;—&#0032;open&#0045;source&#0032;&#0038;&#0032;self&#0045;hosted | Product Hunt" style="width: 250px; height: 54px;" width="250" height="54" /></a>
+
 **Lynx** is an open-source, self-hosted link manager that helps you gather all your digital touchpoints in a single page, with secure authentication and a fully customizable design.
 
 ---
@@ -169,22 +171,20 @@ Your app will be available at a URL like: https://your-app.onrender.com
 
 ## 📝 Changelog
 
-### v3.1.0
+### v3.2.0
 
 ### 🔧 Admin
 - Interface title updated to: **“Lynx - Your personal links hub”**
 - **Profile**
-  - Added *Show/Hide profile picture* toggle (persisted in DB)
   - Bio now supports **line breaks** (`whitespace-pre-line`)
   - Empty bio is automatically hidden (no blank space left)
   - Social links work properly → hidden if empty
-  - Profile picture bug fix
 - **Links**
   - Text color is now applied consistently across the entire card (title, description, URL)
-  - Support for **emoji** or **PNG images** next to each link
-  - Improved **Text Card** rendering: each link is displayed on two lines  
+  - Improved **Text Card** rendering: each link is displayed on two lines
     → Name on top, URL below (indented with horizontal scroll for long URLs)
-  - Ability to export/import Links & Profile as Json 
+  - Bug fixes in rendering icons, removing cards, and updating links
+  - Ability to export/import Links as Json
 - **Theme**
   - Removed duplicate *“Content”* tab (was a duplicate of name + bio)
   - **Export/Import** now correctly saves and restores themes
@@ -204,8 +204,10 @@ Your app will be available at a URL like: https://your-app.onrender.com
 - **Profile**
   - Option to resize (enlarge/reduce) the profile image
   - Option to choose the placement of profile elements (name, bio, avatar, etc.)
+  - Bug fix: profile picture not working
 - **Links**
   - Ability to center text and customize its alignment within cards
+  - Bug fix: image/emoji next to link not working
 
 - **Themes**
   - Further improvements to theme usability and customization

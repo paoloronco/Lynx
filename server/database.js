@@ -7,12 +7,18 @@ const __dirname = dirname(__filename);
 
 const dbPath = join(__dirname, 'lynx.db');
 
-// Create database connection
-const db = new sqlite3.Database(dbPath, (err) => {
+// Create database connection with proper configuration for persistence
+const db = new sqlite3.Database(dbPath, sqlite3.OPEN_READWRITE | sqlite3.OPEN_CREATE | sqlite3.OPEN_FULLMUTEX, (err) => {
   if (err) {
     console.error('Error opening database:', err.message);
   } else {
-    console.log('Connected to SQLite database');
+    console.log('Connected to SQLite database at', dbPath);
+    // Enable foreign keys and other PRAGMAs
+    db.serialize(() => {
+      db.run('PRAGMA journal_mode = WAL');
+      db.run('PRAGMA synchronous = NORMAL');
+      db.run('PRAGMA foreign_keys = ON');
+    });
   }
 });
 
@@ -107,12 +113,15 @@ export const initializeDatabase = () => {
   });
 };
 
-// Database query helpers
+// Database query helpers with better error handling
 export const dbGet = (sql, params = []) => {
   return new Promise((resolve, reject) => {
     db.get(sql, params, (err, row) => {
-      if (err) reject(err);
-      else resolve(row);
+      if (err) {
+        console.error('Database get error:', { sql, params, error: err.message });
+        return reject(err);
+      }
+      resolve(row);
     });
   });
 };
@@ -120,8 +129,11 @@ export const dbGet = (sql, params = []) => {
 export const dbAll = (sql, params = []) => {
   return new Promise((resolve, reject) => {
     db.all(sql, params, (err, rows) => {
-      if (err) reject(err);
-      else resolve(rows);
+      if (err) {
+        console.error('Database all error:', { sql, params, error: err.message });
+        return reject(err);
+      }
+      resolve(rows);
     });
   });
 };
@@ -129,10 +141,31 @@ export const dbAll = (sql, params = []) => {
 export const dbRun = (sql, params = []) => {
   return new Promise((resolve, reject) => {
     db.run(sql, params, function(err) {
-      if (err) reject(err);
-      else resolve({ id: this.lastID, changes: this.changes });
+      if (err) {
+        console.error('Database run error:', { 
+          sql, 
+          params, 
+          error: err.message,
+          stack: err.stack 
+        });
+        return reject(err);
+      }
+      resolve(this);
     });
   });
+};
+
+// Transaction helper
+export const withTransaction = async (callback) => {
+  try {
+    await dbRun('BEGIN TRANSACTION');
+    const result = await callback();
+    await dbRun('COMMIT');
+    return result;
+  } catch (error) {
+    await dbRun('ROLLBACK');
+    throw error;
+  }
 };
 
 export default db;

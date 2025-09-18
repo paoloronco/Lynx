@@ -191,7 +191,9 @@ interface LinkItem {
   url: string;
   type: string;
   icon?: string;
+  // Support both camelCase and snake_case for API compatibility
   iconType?: 'emoji' | 'image' | 'svg';
+  icon_type?: 'emoji' | 'image' | 'svg';
   backgroundColor?: string;
   textColor?: string;
   size?: 'small' | 'medium' | 'large';
@@ -211,10 +213,19 @@ const apiRequest = async <T>(endpoint: string, options: RequestInit = {}): Promi
     headers['Authorization'] = `Bearer ${token}`;
   }
 
+  // Prevent any caching of API responses and bust caches for GETs
+  const method = (options.method || 'GET').toUpperCase();
+  let url = `${API_BASE}${endpoint}`;
+  if (method === 'GET') {
+    const sep = url.includes('?') ? '&' : '?';
+    url = `${url}${sep}_ts=${Date.now()}`;
+  }
+
   try {
-    const response = await fetch(`${API_BASE}${endpoint}`, {
+    const response = await fetch(url, {
       ...options,
       headers,
+      cache: 'no-store',
     });
 
     const data = await response.json();

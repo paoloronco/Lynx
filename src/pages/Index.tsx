@@ -88,20 +88,24 @@ const Index = () => {
         // Load links data from database
         const linksData = await linksApi.get();
         if (linksData && linksData.length > 0) {
-          const formattedLinks = linksData.map(link => ({
-            id: link.id,
-            title: link.title,
-            description: link.description || '',
-            url: link.url,
-            type: link.type as 'link' | 'text',
-            icon: link.icon,
-            iconType: link.iconType,
-            backgroundColor: link.backgroundColor,
-            textColor: link.textColor,
-            size: link.size,
-            content: link.content,
-            textItems: link.textItems
-          }));
+          const formattedLinks = linksData.map(link => {
+            // Use iconType if available, otherwise fall back to icon_type from the API
+            const iconType = link.iconType || (link as any).icon_type;
+            return {
+              id: link.id,
+              title: link.title,
+              description: link.description || '',
+              url: link.url,
+              type: (link.type as 'link' | 'text') || 'link',
+              icon: link.icon || undefined,
+              iconType: iconType || undefined,
+              backgroundColor: link.backgroundColor,
+              textColor: link.textColor,
+              size: link.size,
+              content: link.content,
+              textItems: link.textItems
+            };
+          });
           setLinks(formattedLinks);
         }
 
