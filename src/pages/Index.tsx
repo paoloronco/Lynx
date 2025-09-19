@@ -16,6 +16,8 @@ interface ProfileData {
     facebook?: string;
     twitter?: string;
   };
+  nameFontSize?: string;
+  bioFontSize?: string;
 }
 
 const Index = () => {
@@ -81,6 +83,8 @@ const Index = () => {
             name: profileData.name,
             bio: profileData.bio,
             avatar: profileData.avatar,
+            nameFontSize: (profileData as any).name_font_size || (profileData as any).nameFontSize || undefined,
+            bioFontSize: (profileData as any).bio_font_size || (profileData as any).bioFontSize || undefined,
             socialLinks: profileData.social_links || {}
           });
         }

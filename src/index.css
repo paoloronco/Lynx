@@ -1,6 +1,6 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import 'tailwindcss/base';
+@import 'tailwindcss/components';
+@import 'tailwindcss/utilities';
 
 /* Modern Link Management Design System */
 
@@ -115,11 +115,12 @@
 
 @layer base {
   * {
-    @apply border-border;
+    border-color: hsl(var(--border));
   }
 
   body {
-    @apply bg-background text-foreground;
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
     background: var(--gradient-background);
     min-height: 100vh;
   }
@@ -128,10 +129,53 @@
 /* Custom utility classes */
 @layer utilities {
   .glass-card {
-    background: var(--glass-bg);
-    backdrop-filter: blur(20px);
+    /* Use a layered approach: tint overlay + semi-transparent card background */
+    background: linear-gradient(180deg, color-mix(in srgb, var(--glass-tint) 12%, transparent), transparent), var(--glass-bg);
+    backdrop-filter: blur(var(--blur-intensity, 20px));
+    -webkit-backdrop-filter: blur(var(--blur-intensity, 20px));
     border: var(--glass-border);
-    box-shadow: var(--shadow-card);
+    box-shadow: var(--card-glow, var(--shadow-card));
+  }
+
+  /* Admin edit overrides: make inputs, selects, and textareas readable when editing */
+  .admin-edit input:not([type="color"]),
+  .admin-edit textarea,
+  .admin-edit [class*="SelectTrigger"],
+  .admin-edit [class*="select-trigger"] {
+    background-color: #ffffff !important;
+    color: #000000 !important;
+    border: 1px solid #e5e7eb !important;
+  }
+  
+  .dark .admin-edit input:not([type="color"]),
+  .dark .admin-edit textarea,
+  .dark .admin-edit [class*="SelectTrigger"],
+  .dark .admin-edit [class*="select-trigger"] {
+    background-color: #1f2937 !important;
+    color: #ffffff !important;
+    border-color: #374151 !important;
+  }
+  
+  .admin-edit input::placeholder,
+  .admin-edit textarea::placeholder {
+    color: #6b7280 !important;
+  }
+  
+  .dark .admin-edit input::placeholder,
+  .dark .admin-edit textarea::placeholder {
+    color: #9ca3af !important;
+  }
+  
+  .admin-edit [data-radix-select-trigger],
+  .admin-edit [class*="SelectContent"] {
+    background-color: #ffffff !important;
+    color: #000000 !important;
+  }
+  
+  .dark .admin-edit [data-radix-select-trigger],
+  .dark .admin-edit [class*="SelectContent"] {
+    background-color: #1f2937 !important;
+    color: #ffffff !important;
   }
   
   .glow-effect {

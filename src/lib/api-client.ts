@@ -30,9 +30,10 @@ const deriveKey = async (): Promise<CryptoKey> => {
   const deviceSecret = getOrCreateDeviceSecret();
   const salt = textEncoder.encode(location.origin);
 
+  // Web Crypto expects a BufferSource; pass the underlying ArrayBuffer for correct typing
   const baseKey = await cryptoObj.subtle.importKey(
     'raw',
-    deviceSecret,
+    deviceSecret.buffer as ArrayBuffer,
     'PBKDF2',
     false,
     ['deriveKey']
@@ -182,6 +183,8 @@ interface ProfileResponse extends ApiResponse {
   social_links: Record<string, string>;
   show_avatar?: number;
   showAvatar?: boolean;
+  name_font_size?: string;
+  bio_font_size?: string;
 }
 
 interface LinkItem {
@@ -316,7 +319,7 @@ export const profileApi = {
     });
   },
 
-  update: async (profile: { name: string; bio: string; avatar: string; socialLinks: Record<string, string>; showAvatar?: boolean }): Promise<ApiResponse> => {
+  update: async (profile: { name: string; bio: string; avatar: string; socialLinks: Record<string, string>; showAvatar?: boolean; nameFontSize?: string; bioFontSize?: string }): Promise<ApiResponse> => {
     return apiRequest<ApiResponse>('/profile', {
       method: 'PUT',
       body: JSON.stringify({
@@ -326,6 +329,8 @@ export const profileApi = {
         social_links: profile.socialLinks || {},
         // backend expects snake_case; send numeric boolean for SQLite
         show_avatar: typeof profile.showAvatar === 'boolean' ? (profile.showAvatar ? 1 : 0) : 1,
+        name_font_size: profile.nameFontSize || undefined,
+        bio_font_size: profile.bioFontSize || undefined
       }),
     });
   },

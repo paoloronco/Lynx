@@ -197,6 +197,30 @@ export const ThemeCustomizer = ({ theme, onThemeChange, onThemePreview }: ThemeC
               value={pendingTheme.card}
               onChange={(color) => updatePendingTheme({ card: color })}
             />
+            {/* Card blur tint controls - stored on pendingTheme.cardBlurTint (not part of ThemeConfig type) */}
+            <div>
+              <Label className="text-sm">Card Blur Tint</Label>
+              <div className="flex items-center gap-2">
+                <div
+                  className="w-8 h-8 rounded border-2 border-border cursor-pointer transition-all hover:scale-110"
+                  style={{ backgroundColor: (pendingTheme as any).cardBlurTint || '#ffffff' }}
+                  onClick={() => setActiveColorPicker(activeColorPicker === 'cardTint' ? null : 'cardTint')}
+                />
+                <Input
+                  value={(pendingTheme as any).cardBlurTint || '#ffffff'}
+                  onChange={(e) => updatePendingTheme({ ...(pendingTheme as any), cardBlurTint: e.target.value } as any)}
+                  className="font-mono text-xs"
+                />
+              </div>
+              {activeColorPicker === 'cardTint' && (
+                <div className="absolute z-50 mt-2">
+                  <div className="fixed inset-0" onClick={() => setActiveColorPicker(null)} />
+                  <div className="bg-card border border-border rounded-lg p-4 shadow-lg">
+                    <HexColorPicker color={(pendingTheme as any).cardBlurTint || '#ffffff'} onChange={(c) => updatePendingTheme({ ...(pendingTheme as any), cardBlurTint: c } as any)} />
+                  </div>
+                </div>
+              )}
+            </div>
             <ColorPicker
               id="foreground"
               label="Text Color"
@@ -209,12 +233,7 @@ export const ThemeCustomizer = ({ theme, onThemeChange, onThemePreview }: ThemeC
               value={pendingTheme.muted}
               onChange={(color) => updatePendingTheme({ muted: color })}
             />
-            <ColorPicker
-              id="accent"
-              label="Accent Color"
-              value={pendingTheme.accent}
-              onChange={(color) => updatePendingTheme({ accent: color })}
-            />
+            {/* Accent color removed - mirrors primary color now */}
           </div>
 
           <Separator />
@@ -288,47 +307,8 @@ export const ThemeCustomizer = ({ theme, onThemeChange, onThemePreview }: ThemeC
               </Select>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Name Font Size</Label>
-                <Input
-                  value={pendingTheme.fontSize.name}
-                  onChange={(e) => updatePendingTheme({
-                    fontSize: { ...pendingTheme.fontSize, name: e.target.value }
-                  })}
-                  placeholder="1.5rem"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Bio Font Size</Label>
-                <Input
-                  value={pendingTheme.fontSize.bio}
-                  onChange={(e) => updatePendingTheme({
-                    fontSize: { ...pendingTheme.fontSize, bio: e.target.value }
-                  })}
-                  placeholder="0.875rem"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Link Title Size</Label>
-                <Input
-                  value={pendingTheme.fontSize.linkTitle}
-                  onChange={(e) => updatePendingTheme({
-                    fontSize: { ...pendingTheme.fontSize, linkTitle: e.target.value }
-                  })}
-                  placeholder="1rem"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Link Description Size</Label>
-                <Input
-                  value={pendingTheme.fontSize.linkDescription}
-                  onChange={(e) => updatePendingTheme({
-                    fontSize: { ...pendingTheme.fontSize, linkDescription: e.target.value }
-                  })}
-                  placeholder="0.875rem"
-                />
-              </div>
+            <div className="space-y-2">
+              <p className="text-sm text-muted-foreground">Per-item font sizes are managed individually in Profile and Link editors. Removed from global theme to avoid confusion.</p>
             </div>
           </div>
         </TabsContent>

@@ -20,6 +20,8 @@ interface ProfileData {
     facebook?: string;
     twitter?: string;
   };
+  nameFontSize?: string;
+  bioFontSize?: string;
 }
 
 const Admin = () => {
@@ -105,7 +107,9 @@ const Admin = () => {
             bio: profileData.bio,
             avatar: profileData.avatar || (profileAvatar as string),
             showAvatar: (profileData as any).showAvatar ?? true,
-            socialLinks: profileData.social_links || {}
+            socialLinks: profileData.social_links || {},
+            nameFontSize: (profileData as any).name_font_size || (profileData as any).nameFontSize || undefined,
+            bioFontSize: (profileData as any).bio_font_size || (profileData as any).bioFontSize || undefined,
           });
         }
 
@@ -122,12 +126,24 @@ const Admin = () => {
             icon: link.icon,
             iconType: link.iconType,
             backgroundColor: link.backgroundColor,
+            titleFontFamily: (link as any).titleFontFamily || (link as any).titleFont || undefined,
+            descriptionFontFamily: (link as any).descriptionFontFamily || undefined,
+            alignment: (link as any).alignment || undefined,
             textColor: link.textColor,
             size: link.size,
             content: link.content,
             textItems: link.textItems
           }));
-          setLinks(formattedLinks);
+          // Ensure typography fields are preserved in normalized links
+          const fullyNormalized = formattedLinks.map(link => ({
+            ...link,
+            titleFontFamily: (link as any).titleFontFamily || undefined,
+            descriptionFontFamily: (link as any).descriptionFontFamily || undefined,
+            alignment: (link as any).alignment || undefined,
+            titleFontSize: (link as any).titleFontSize || undefined,
+            descriptionFontSize: (link as any).descriptionFontSize || undefined
+          }));
+          setLinks(fullyNormalized);
         }
 
         // Load theme data (for editing purposes) and apply it to admin too
@@ -173,6 +189,8 @@ const Admin = () => {
         avatar: newProfile.avatar,
         socialLinks: newProfile.socialLinks || {},
         showAvatar: typeof newProfile.showAvatar === 'boolean' ? newProfile.showAvatar : true,
+        nameFontSize: newProfile.nameFontSize,
+        bioFontSize: newProfile.bioFontSize,
       });
       setProfile(newProfile);
     } catch (error: any) {
@@ -187,20 +205,12 @@ const Admin = () => {
 
   const saveLinks = async (newLinks: LinkData[]) => {
     try {
-      // Format the links for the API
+      // Preserve all link properties (including custom styling fields)
       const formattedLinks = newLinks.map(link => ({
+        ...link,
         id: String(link.id),
-        title: link.title,
-        description: link.description,
-        url: link.url,
-        type: link.type || 'link',
-        icon: link.icon,
-        iconType: link.iconType,
-        backgroundColor: link.backgroundColor,
-        textColor: link.textColor,
-        size: link.size,
-        content: link.content,
-        textItems: link.textItems
+        // ensure `type` is present (backend expects a type for each link)
+        type: (link as any).type || 'link'
       }));
       // Persist first; only update local state if backend succeeds
       await linksApi.update(formattedLinks);
@@ -218,6 +228,10 @@ const Admin = () => {
         textColor: link.textColor,
         size: link.size,
         content: link.content,
+        // Preserve new typography and alignment fields
+        titleFontFamily: (link as any).titleFontFamily || (link as any).titleFont || undefined,
+        descriptionFontFamily: (link as any).descriptionFontFamily || undefined,
+        alignment: (link as any).alignment || undefined,
         textItems: link.textItems
       }));
       setLinks(normalized);

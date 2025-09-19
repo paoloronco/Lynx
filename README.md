@@ -171,7 +171,7 @@ Your app will be available at a URL like: https://your-app.onrender.com
 
 ## 📝 Changelog
 
-### v3.2.1
+### v3.3.0
 
 ### 🔧 Admin
 - Interface title updated to: **“Lynx - Your personal links hub”**
@@ -179,15 +179,18 @@ Your app will be available at a URL like: https://your-app.onrender.com
   - Bio now supports **line breaks** (`whitespace-pre-line`)
   - Empty bio is automatically hidden (no blank space left)
   - Social links work properly → hidden if empty
+  - Profile picture now working properly
 - **Links**
   - Text color is now applied consistently across the entire card (title, description, URL)
   - Improved **Text Card** rendering: each link is displayed on two lines
     → Name on top, URL below (indented with horizontal scroll for long URLs)
-  - Bug fixes in rendering icons, removing cards, and updating links
   - Bug fix: image/emoji next to link not working
   - Ability to export/import Links as Json
+  - Bug fixes in rendering icons, removing cards, and updating links
+  - Ability to edit and personalize further links, with custom font types, size, alignment 
 - **Theme**
   - Removed duplicate *“Content”* tab (was a duplicate of name + bio)
+  - Partially removed **Typography** tab, to add it in the links and profile section, enhancing UX
   - **Export/Import** now correctly saves and restores themes
 - **UI**
   - Footer updated to:  
@@ -202,12 +205,9 @@ Your app will be available at a URL like: https://your-app.onrender.com
 ## 📌 To-Do / Next Steps
 
 ### 🔧 Admin
-- **Profile**
-  - Option to resize (enlarge/reduce) the profile image
-  - Option to choose the placement of profile elements (name, bio, avatar, etc.)
-  - Bug fix: profile picture not working
 - **Links**
-  - Ability to center text and customize its alignment within cards
+  - Bug fix: links fonts personalization (font type, dimensions, alignment) 
+  - Bug fix: Ability to center text and customize its alignment within cards
 - **Themes**
   - Further improvements to theme usability and customization
   - Enhanced personalization options for layouts, colors, and styles

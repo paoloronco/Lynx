@@ -21,6 +21,9 @@ interface ProfileData {
     facebook?: string;
     twitter?: string;
   };
+  // Per-profile typography
+  nameFontSize?: string;
+  bioFontSize?: string;
 }
 
 interface ProfileSectionProps {
@@ -59,19 +62,56 @@ export const ProfileSection = ({ profile, onProfileUpdate }: ProfileSectionProps
       throw new Error('Selected file is too large (max 20MB).');
     }
 
-    const img = await new Promise<HTMLImageElement>((resolve, reject) => {
-      const url = URL.createObjectURL(file);
+    // Helper to load an image from a src and return the image element
+    const loadImageFromSrc = (src: string) => new Promise<HTMLImageElement>((resolve, reject) => {
       const image = new Image();
-      image.onload = () => {
-        URL.revokeObjectURL(url);
-        resolve(image);
-      };
-      image.onerror = () => {
-        URL.revokeObjectURL(url);
-        reject(new Error('Could not load the selected image.'));
-      };
-      image.src = url;
+      image.onload = () => resolve(image);
+      image.onerror = (e) => reject(new Error('Could not load the selected image from provided source.'));
+      image.src = src;
     });
+
+    // If SVG, avoid canvas draw (may produce CORS/taint issues) and just return a data URL
+    const isSvg = file.type === 'image/svg+xml' || file.name?.toLowerCase().endsWith('.svg');
+    if (isSvg) {
+      // Read as text then build a data URL to preserve vector content
+      const svgData = await new Promise<string>((resolve, reject) => {
+        const fr = new FileReader();
+        fr.onload = () => resolve(String(fr.result || ''));
+        fr.onerror = () => reject(new Error('Failed to read SVG file.'));
+        fr.readAsText(file);
+      });
+      const encoded = encodeURIComponent(svgData).replace(/'/g, '%27').replace(/\(/g, '%28').replace(/\)/g, '%29');
+      return `data:image/svg+xml;charset=utf-8,${encoded}`;
+    }
+
+    // Try loading from object URL first, then fall back to data URL if needed
+    let objectUrl: string | null = null;
+    let dataUrl: string | null = null;
+    let img: HTMLImageElement | null = null;
+    try {
+      objectUrl = URL.createObjectURL(file);
+      img = await loadImageFromSrc(objectUrl);
+      // success
+      URL.revokeObjectURL(objectUrl);
+      objectUrl = null;
+    } catch (err) {
+      // try data URL fallback
+      if (objectUrl) {
+        try { URL.revokeObjectURL(objectUrl); } catch (e) {}
+        objectUrl = null;
+      }
+      try {
+        dataUrl = await new Promise<string>((resolve, reject) => {
+          const fr = new FileReader();
+          fr.onload = () => resolve(String(fr.result || ''));
+          fr.onerror = () => reject(new Error('Failed to read file as data URL.'));
+          fr.readAsDataURL(file);
+        });
+        img = await loadImageFromSrc(dataUrl);
+      } catch (err2) {
+        throw new Error('Could not load the selected image. The file may be corrupt or in an unsupported format.');
+      }
+    }
 
     // Resize to fit within bounds while keeping aspect ratio
     const MAX_DIM = 512; // avatar-friendly, keeps payload small
@@ -87,7 +127,15 @@ export const ProfileSection = ({ profile, onProfileUpdate }: ProfileSectionProps
     canvas.height = height;
     const ctx = canvas.getContext('2d');
     if (!ctx) throw new Error('Canvas not supported.');
-    ctx.drawImage(img, 0, 0, width, height);
+    try {
+      ctx.drawImage(img as HTMLImageElement, 0, 0, width, height);
+    } catch (drawErr) {
+      // Canvas draw may fail for certain SVGs or security-restricted images. If so, return original data URL if available.
+      if (dataUrl) return dataUrl;
+      // As a last resort, if we still have the original file as an object URL, attempt to return that (but it won't be persisted across sessions)
+      if (objectUrl) return objectUrl;
+      throw new Error('Failed to process image on canvas. Try a different image or smaller file.');
+    }
 
     // Decide output format
     const isPng = file.type === 'image/png';
@@ -96,16 +144,24 @@ export const ProfileSection = ({ profile, onProfileUpdate }: ProfileSectionProps
     const quality = 0.9; // good quality for avatars
     const mime = usePng ? 'image/png' : 'image/jpeg';
 
-    const dataUrl = canvas.toDataURL(mime, quality);
+    const outputDataUrl = canvas.toDataURL(mime, quality);
 
     // Final payload sanity check (~base64 expands by ~33%)
-    const approxBytes = Math.ceil((dataUrl.length - 'data:;base64,'.length) * 0.75);
+    const approxBytes = Math.ceil((outputDataUrl.length - 'data:;base64,'.length) * 0.75);
     const MAX_OUTPUT_BYTES = 5 * 1024 * 1024; // 5MB after compression
     if (approxBytes > MAX_OUTPUT_BYTES) {
       throw new Error('Processed image is still too large. Try a smaller image.');
     }
 
-    return dataUrl;
+    return outputDataUrl;
+  };
+
+  const getAvatarUrl = (avatar?: string | null) => {
+    if (!avatar) return profileAvatar as unknown as string;
+    if (avatar.startsWith('data:') || avatar.startsWith('blob:') || avatar.startsWith('http')) return avatar;
+    if (avatar.startsWith('/')) return avatar;
+    // If it's a relative path, assume uploads
+    return `/uploads/${avatar.replace(/^\/+/, '')}`;
   };
 
   const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -129,12 +185,12 @@ export const ProfileSection = ({ profile, onProfileUpdate }: ProfileSectionProps
         {current.showAvatar !== false && (
         <Avatar className="w-24 h-24">
           <AvatarImage
-            src={current.avatar || profileAvatar}
-            alt={current.name}
+            src={getAvatarUrl(current.avatar)}
+            alt={current.name || 'User'}
             onError={(e) => { (e.target as HTMLImageElement).src = '/placeholder.svg'; }}
           />
           <AvatarFallback className="text-2xl font-bold gradient-text">
-            {current.name.charAt(0) || 'U'}
+            {(current.name && current.name.length > 0) ? current.name.charAt(0) : 'U'}
           </AvatarFallback>
         </Avatar>
         )}
@@ -178,6 +234,26 @@ export const ProfileSection = ({ profile, onProfileUpdate }: ProfileSectionProps
             placeholder="Your name"
             className="glass-card border-primary/20 text-center text-xl font-semibold"
           />
+          <div className="grid grid-cols-2 gap-2">
+            <div className="space-y-1">
+              <Label className="text-xs">Name Font Size (px)</Label>
+              <Input
+                type="number"
+                value={parseInt(editProfile.nameFontSize || '24', 10)}
+                onChange={(e) => setEditProfile(prev => ({ ...prev, nameFontSize: `${e.target.value}px` }))}
+                className="h-8 w-full"
+              />
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs">Bio Font Size (px)</Label>
+              <Input
+                type="number"
+                value={parseInt(editProfile.bioFontSize || '14', 10)}
+                onChange={(e) => setEditProfile(prev => ({ ...prev, bioFontSize: `${e.target.value}px` }))}
+                className="h-8 w-full"
+              />
+            </div>
+          </div>
           <Textarea
             value={editProfile.bio}
             onChange={(e) => setEditProfile(prev => ({ ...prev, bio: e.target.value }))}
@@ -265,7 +341,7 @@ export const ProfileSection = ({ profile, onProfileUpdate }: ProfileSectionProps
       ) : (
         <div className="space-y-4">
           <div className="relative group">
-            <h1 className="text-2xl font-bold text-foreground mb-2">
+            <h1 className="font-bold text-foreground mb-2" style={{ ...(current.nameFontSize ? { fontSize: current.nameFontSize } : { fontSize: '2rem' }) }}>
               {current.name || "Your Name"}
             </h1>
             
@@ -325,7 +401,7 @@ export const ProfileSection = ({ profile, onProfileUpdate }: ProfileSectionProps
               </div>
             )}
             
-            <p className="text-muted-foreground leading-relaxed whitespace-pre-line">
+            <p className="text-muted-foreground leading-relaxed whitespace-pre-line" style={{ ...(current.bioFontSize ? { fontSize: current.bioFontSize } : {}) }}>
               {current.bio || "Add a bio to tell people about yourself..."}
             </p>
             <Button

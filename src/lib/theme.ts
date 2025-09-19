@@ -24,12 +24,7 @@ export interface ThemeConfig {
   
   // Typography
   fontFamily: string;
-  fontSize: {
-    name: string;
-    bio: string;
-    linkTitle: string;
-    linkDescription: string;
-  };
+  // Note: per-item font sizes are handled on profile and link objects; theme no longer stores font sizes
   
   // Layout
   cardRadius: number;
@@ -72,19 +67,20 @@ export const defaultTheme: ThemeConfig = {
   },
   
   fontFamily: 'Inter, system-ui, sans-serif',
-  fontSize: {
-    name: '1.5rem',
-    bio: '0.875rem',
-    linkTitle: '1rem',
-    linkDescription: '0.875rem'
-  },
+  // font sizes removed from theme defaults; items will use their own saved sizes
   
   cardRadius: 12,
   cardSpacing: 12,
   maxWidth: '28rem',
   
-  glowIntensity: 0.3,
-  blurIntensity: 20,
+  // Slightly stronger glow and softer blur for a more modern glass effect
+  glowIntensity: 0.45,
+  blurIntensity: 28,
+
+  // Typography niceties
+  // We'll expose line heights so it's easier to tweak spacing across the site
+  // Note: these are not part of ThemeConfig interface above (backwards compatible)
+  // but we'll set CSS variables for them below when applying the theme.
   
   content: {
     profileName: 'Alex Johnson',
@@ -135,7 +131,8 @@ export const applyTheme = (theme: ThemeConfig) => {
   root.style.setProperty('--foreground', hexToHsl(theme.foreground));
   root.style.setProperty('--muted', hexToHsl(theme.backgroundSecondary));
   root.style.setProperty('--muted-foreground', hexToHsl(theme.muted));
-  root.style.setProperty('--accent', hexToHsl(theme.accent));
+  // Accent is no longer independently configurable; mirror primary to keep compatibility
+  root.style.setProperty('--accent', hexToHsl(theme.primary));
   root.style.setProperty('--accent-foreground', hexToHsl(theme.foreground));
   root.style.setProperty('--border', hexToHsl(theme.border));
   root.style.setProperty('--input', hexToHsl(theme.backgroundSecondary));
@@ -156,6 +153,9 @@ export const applyTheme = (theme: ThemeConfig) => {
   // Apply typography
   root.style.setProperty('--font-family', theme.fontFamily);
   document.body.style.fontFamily = theme.fontFamily;
+  // Reasonable default line heights
+  root.style.setProperty('--line-height-normal', '1.45');
+  root.style.setProperty('--line-height-tight', '1.25');
   
   // Apply layout
   root.style.setProperty('--radius', `${theme.cardRadius}px`);
@@ -163,8 +163,13 @@ export const applyTheme = (theme: ThemeConfig) => {
   root.style.setProperty('--card-spacing', `${theme.cardSpacing}px`);
   
   // Update glass card background with blur intensity
-  root.style.setProperty('--glass-bg', `hsl(${hexToHsl(theme.card)} / 0.8)`);
+  root.style.setProperty('--glass-bg', `hsl(${hexToHsl(theme.card)} / 0.78)`);
   root.style.setProperty('--glass-border', `1px solid hsl(${hexToHsl(theme.border)} / 0.5)`);
+  // Card glow uses primary glow color with an intensity multiplier
+  root.style.setProperty('--card-glow', `0 8px ${theme.blurIntensity}px hsl(${hexToHsl(theme.primaryGlow)} / ${Math.min(0.9, theme.glowIntensity)})`);
+  // Glass tint (allow override from admin theme payload via `cardBlurTint` if present)
+  const tint = (theme as any).cardBlurTint || theme.card;
+  root.style.setProperty('--glass-tint', tint);
   
   // Force body background update
   document.body.style.background = `linear-gradient(${theme.backgroundGradient.direction}, ${theme.backgroundGradient.from}, ${theme.backgroundGradient.to})`;
@@ -202,7 +207,8 @@ export const applyAdminTheme = () => {
   root.style.setProperty('--foreground', hexToHsl(adminTheme.foreground));
   root.style.setProperty('--muted', hexToHsl(adminTheme.backgroundSecondary));
   root.style.setProperty('--muted-foreground', hexToHsl(adminTheme.muted));
-  root.style.setProperty('--accent', hexToHsl(adminTheme.accent));
+  // Accent mirrors primary in admin theme
+  root.style.setProperty('--accent', hexToHsl(adminTheme.primary));
   root.style.setProperty('--accent-foreground', hexToHsl(adminTheme.foreground));
   root.style.setProperty('--border', hexToHsl(adminTheme.border));
   root.style.setProperty('--input', hexToHsl(adminTheme.backgroundSecondary));

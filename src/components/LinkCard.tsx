@@ -16,12 +16,23 @@ export interface LinkData {
   iconType?: 'emoji' | 'image' | 'svg';
   backgroundColor?: string;
   textColor?: string;
+  // Per-link typography (pixel strings, e.g. '16px')
+  titleFontSize?: string;
+  titleFontFamily?: string;
+  descriptionFontSize?: string;
+  descriptionFontFamily?: string;
+  // Alignment for content inside the card: left | center | right
+  alignment?: 'left' | 'center' | 'right';
   size?: 'small' | 'medium' | 'large';
   type?: 'link' | 'text';
   content?: string; // For text-only cards
   textItems?: Array<{
     text: string;
     url?: string;
+    // Optional per-item styling
+    textColor?: string;
+    fontSize?: string;
+    fontFamily?: string;
   }>; // For clickable list items
 }
 
@@ -82,6 +93,13 @@ export const LinkCard = ({ link, onUpdate, onDelete, isDragging, onMoveUp, onMov
     if (link.textColor) {
       styles.color = link.textColor;
     }
+    if (link.titleFontFamily) {
+      styles.fontFamily = link.titleFontFamily;
+    }
+    // text alignment applies to block-level content inside the card
+    if (link.alignment) {
+      styles.textAlign = link.alignment as any;
+    }
     return styles;
   };
 
@@ -95,7 +113,7 @@ export const LinkCard = ({ link, onUpdate, onDelete, isDragging, onMoveUp, onMov
     <Card 
       className={`glass-card ${getSizeClasses(link.size)} transition-smooth hover:glow-effect group cursor-pointer relative ${
         isDragging ? 'opacity-50 rotate-2' : ''
-      }`}
+      } ${isEditing ? 'admin-edit' : ''}`}
       onClick={handleClick}
       style={getCustomStyles()}
     >
@@ -110,20 +128,98 @@ export const LinkCard = ({ link, onUpdate, onDelete, isDragging, onMoveUp, onMov
               value={editLink.title}
               onChange={(e) => setEditLink(prev => ({ ...prev, title: e.target.value }))}
               placeholder="Link title"
-              className="glass-card border-primary/20"
+              className="glass-card border-primary/20 bg-white text-black dark:bg-gray-800 dark:text-white"
             />
+            <div className="grid grid-cols-2 gap-2">
+              <div className="space-y-1">
+                <Label className="text-xs">Title Font Size (px)</Label>
+                <Input
+                  type="number"
+                  value={parseInt(editLink.titleFontSize || '16', 10)}
+                  onChange={(e) => setEditLink(prev => ({ ...prev, titleFontSize: `${e.target.value}px` }))}
+                  className="h-8 w-full"
+                />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">Description Font Size (px)</Label>
+                <Input
+                  type="number"
+                  value={parseInt(editLink.descriptionFontSize || '14', 10)}
+                  onChange={(e) => setEditLink(prev => ({ ...prev, descriptionFontSize: `${e.target.value}px` }))}
+                  className="h-8 w-full"
+                />
+              </div>
+            </div>
+            <div className="grid grid-cols-3 gap-2">
+              <div className="space-y-1">
+                <Label className="text-xs">Title Font</Label>
+                <Select
+                  value={editLink.titleFontFamily || 'Inter, system-ui, sans-serif'}
+                  onValueChange={(value: string) => setEditLink(prev => ({ ...prev, titleFontFamily: value }))}
+                >
+                  <SelectTrigger className="h-8 bg-white text-black">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value={"Inter, system-ui, sans-serif"}>Inter</SelectItem>
+                    <SelectItem value={"Arial, Helvetica, sans-serif"}>Arial</SelectItem>
+                    <SelectItem value={"Helvetica, Arial, sans-serif"}>Helvetica</SelectItem>
+                    <SelectItem value={"Georgia, serif"}>Georgia</SelectItem>
+                    <SelectItem value={"'Times New Roman', Times, serif"}>Times New Roman</SelectItem>
+                    <SelectItem value={"'Courier New', Courier, monospace"}>Courier New</SelectItem>
+                    <SelectItem value={"Verdana, Geneva, sans-serif"}>Verdana</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">Description Font</Label>
+                <Select
+                  value={editLink.descriptionFontFamily || 'Inter, system-ui, sans-serif'}
+                  onValueChange={(value: string) => setEditLink(prev => ({ ...prev, descriptionFontFamily: value }))}
+                >
+                  <SelectTrigger className="h-8 bg-white text-black">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value={"Inter, system-ui, sans-serif"}>Inter</SelectItem>
+                    <SelectItem value={"Arial, Helvetica, sans-serif"}>Arial</SelectItem>
+                    <SelectItem value={"Helvetica, Arial, sans-serif"}>Helvetica</SelectItem>
+                    <SelectItem value={"Georgia, serif"}>Georgia</SelectItem>
+                    <SelectItem value={"'Times New Roman', Times, serif"}>Times New Roman</SelectItem>
+                    <SelectItem value={"'Courier New', Courier, monospace"}>Courier New</SelectItem>
+                    <SelectItem value={"Verdana, Geneva, sans-serif"}>Verdana</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">Alignment</Label>
+                <Select
+                  value={editLink.alignment || 'left'}
+                  onValueChange={(value: 'left' | 'center' | 'right') => setEditLink(prev => ({ ...prev, alignment: value }))}
+                >
+                  <SelectTrigger className="h-8 bg-white text-black">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="left">Left</SelectItem>
+                    <SelectItem value="center">Center</SelectItem>
+                    <SelectItem value="right">Right</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
             <Textarea
               value={editLink.description}
               onChange={(e) => setEditLink(prev => ({ ...prev, description: e.target.value }))}
               placeholder="Link description"
-              className="glass-card border-primary/20 resize-none"
+              className="glass-card border-primary/20 bg-white text-black dark:bg-gray-800 dark:text-white resize-none"
               rows={2}
             />
             <Input
               value={editLink.url}
               onChange={(e) => setEditLink(prev => ({ ...prev, url: e.target.value }))}
               placeholder="https://example.com"
-              className="glass-card border-primary/20"
+              className="glass-card border-primary/20 bg-white text-black dark:bg-gray-800 dark:text-white"
             />
             
             {/* Icon Upload */}
@@ -163,7 +259,7 @@ export const LinkCard = ({ link, onUpdate, onDelete, isDragging, onMoveUp, onMov
                   setEditLink(prev => ({ ...prev, size: value }))
                 }
               >
-                <SelectTrigger className="glass-card border-primary/20">
+                <SelectTrigger className="glass-card border-primary/20 bg-white text-black dark:bg-gray-800 dark:text-white">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -218,7 +314,7 @@ export const LinkCard = ({ link, onUpdate, onDelete, isDragging, onMoveUp, onMov
                     )}
                   </div>
                 )}
-                <h3 className="font-semibold truncate" style={link.textColor ? { color: link.textColor } : undefined}>
+                <h3 className="font-semibold truncate" style={{ ...(link.textColor ? { color: link.textColor } : {}), ...(link.titleFontSize ? { fontSize: link.titleFontSize } : {}), ...(link.titleFontFamily ? { fontFamily: link.titleFontFamily } : {}) }}>
                   {link.title || "Untitled Link"}
                 </h3>
                 <ExternalLink className="w-4 h-4 text-primary opacity-0 group-hover:opacity-100 transition-smooth" />
@@ -226,7 +322,7 @@ export const LinkCard = ({ link, onUpdate, onDelete, isDragging, onMoveUp, onMov
               {link.description && (
                 <p
                   className="text-sm line-clamp-2"
-                  style={link.textColor ? { color: link.textColor } : undefined}
+                  style={{ ...(link.textColor ? { color: link.textColor } : {}), ...(link.descriptionFontSize ? { fontSize: link.descriptionFontSize } : {}), ...(link.descriptionFontFamily ? { fontFamily: link.descriptionFontFamily } : {}) }}
                 >
                   {link.description}
                 </p>

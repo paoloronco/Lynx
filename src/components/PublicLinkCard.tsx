@@ -89,6 +89,13 @@ export const PublicLinkCard = ({ link }: PublicLinkCardProps) => {
     if (link.textColor) {
       styles.color = link.textColor;
     }
+    if (link.titleFontFamily) {
+      // Apply a card-level font family if provided (title/description may override)
+      styles.fontFamily = link.titleFontFamily;
+    }
+    if (link.alignment) {
+      styles.textAlign = link.alignment as any;
+    }
     return styles;
   };
 
@@ -136,21 +143,21 @@ export const PublicLinkCard = ({ link }: PublicLinkCardProps) => {
           </div>
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2">
-              <h3
-                className="font-semibold truncate flex-1"
-                style={link.textColor ? { color: link.textColor } : undefined}
-              >
-                {link.title || "Untitled Link"}
-              </h3>
+                <h3
+                  className="font-semibold truncate flex-1"
+                  style={{ ...(link.textColor ? { color: link.textColor } : {}), ...(link.titleFontSize ? { fontSize: link.titleFontSize } : {}), ...(link.titleFontFamily ? { fontFamily: link.titleFontFamily } : {}) }}
+                >
+                  {link.title || "Untitled Link"}
+                </h3>
               <ExternalLink className="w-4 h-4 text-primary opacity-0 group-hover:opacity-100 transition-smooth flex-shrink-0" />
             </div>
             {link.description && (
-              <p
-                className="text-sm line-clamp-2 mt-1"
-                style={link.textColor ? { color: link.textColor } : undefined}
-              >
-                {link.description}
-              </p>
+                <p
+                  className="text-sm line-clamp-2 mt-1"
+                  style={{ ...(link.textColor ? { color: link.textColor } : {}), ...(link.descriptionFontSize ? { fontSize: link.descriptionFontSize } : {}), ...(link.descriptionFontFamily ? { fontFamily: link.descriptionFontFamily } : {}) }}
+                >
+                  {link.description}
+                </p>
             )}
             {link.url && (
               <p

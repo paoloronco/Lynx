@@ -77,7 +77,7 @@ export const TextCard = ({ link, onUpdate, onDelete, isDragging, onMoveUp, onMov
   const addTextItem = () => {
     setEditLink(prev => ({
       ...prev,
-      textItems: [...(prev.textItems || []), { text: '', url: '' }]
+      textItems: [...(prev.textItems || []), { text: '', url: '', textColor: prev.textColor || '#000000', fontSize: prev.descriptionFontSize || '14px', fontFamily: prev.descriptionFontFamily || 'Inter, system-ui, sans-serif' } as any]
     }));
   };
 
@@ -123,7 +123,7 @@ export const TextCard = ({ link, onUpdate, onDelete, isDragging, onMoveUp, onMov
     <Card 
       className={`glass-card ${getSizeClasses(link.size)} transition-smooth hover:glow-effect group relative ${
         isDragging ? 'opacity-50 rotate-2' : ''
-      } ${link.url ? 'cursor-pointer' : ''}`}
+      } ${link.url ? 'cursor-pointer' : ''} ${isEditing ? 'admin-edit' : ''}`}
       onClick={handleClick}
       style={getCustomStyles()}
     >
@@ -138,8 +138,64 @@ export const TextCard = ({ link, onUpdate, onDelete, isDragging, onMoveUp, onMov
               value={editLink.title}
               onChange={(e) => setEditLink(prev => ({ ...prev, title: e.target.value }))}
               placeholder="Text card title"
-              className="glass-card border-primary/20"
+              className="glass-card border-primary/20 bg-white text-black dark:bg-gray-800 dark:text-white"
             />
+            <div className="grid grid-cols-3 gap-2">
+              <div className="space-y-1">
+                <Label className="text-xs">Title Font</Label>
+                <Select
+                  value={editLink.titleFontFamily || 'Inter, system-ui, sans-serif'}
+                  onValueChange={(value: string) => setEditLink(prev => ({ ...prev, titleFontFamily: value }))}
+                >
+                  <SelectTrigger className="h-8 bg-white text-black">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value={"Inter, system-ui, sans-serif"}>Inter</SelectItem>
+                    <SelectItem value={"Arial, Helvetica, sans-serif"}>Arial</SelectItem>
+                    <SelectItem value={"Georgia, serif"}>Georgia</SelectItem>
+                    <SelectItem value={"'Times New Roman', Times, serif"}>Times New Roman</SelectItem>
+                    <SelectItem value={"'Courier New', Courier, monospace"}>Courier New</SelectItem>
+                    <SelectItem value={"Verdana, Geneva, sans-serif"}>Verdana</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">Description Font</Label>
+                <Select
+                  value={editLink.descriptionFontFamily || 'Inter, system-ui, sans-serif'}
+                  onValueChange={(value: string) => setEditLink(prev => ({ ...prev, descriptionFontFamily: value }))}
+                >
+                  <SelectTrigger className="h-8 bg-white text-black">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value={"Inter, system-ui, sans-serif"}>Inter</SelectItem>
+                    <SelectItem value={"Arial, Helvetica, sans-serif"}>Arial</SelectItem>
+                    <SelectItem value={"Georgia, serif"}>Georgia</SelectItem>
+                    <SelectItem value={"'Times New Roman', Times, serif"}>Times New Roman</SelectItem>
+                    <SelectItem value={"'Courier New', Courier, monospace"}>Courier New</SelectItem>
+                    <SelectItem value={"Verdana, Geneva, sans-serif"}>Verdana</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">Alignment</Label>
+                <Select
+                  value={editLink.alignment || 'left'}
+                  onValueChange={(value: 'left' | 'center' | 'right') => setEditLink(prev => ({ ...prev, alignment: value }))}
+                >
+                  <SelectTrigger className="h-8 bg-white text-black">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="left">Left</SelectItem>
+                    <SelectItem value="center">Center</SelectItem>
+                    <SelectItem value="right">Right</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
             
             {/* Clickable List Items */}
             <div className="space-y-2">
@@ -155,20 +211,67 @@ export const TextCard = ({ link, onUpdate, onDelete, isDragging, onMoveUp, onMov
                   Add Item
                 </Button>
               </div>
-              {editLink.textItems?.map((item, index) => (
+              {editLink.textItems?.map((item: any, index) => (
                 <div key={index} className="flex gap-2 items-center">
                   <Input
                     value={item.text}
                     onChange={(e) => updateTextItem(index, 'text', e.target.value)}
                     placeholder="List item text"
-                    className="glass-card border-primary/20 flex-1"
+                    className="glass-card border-primary/20 bg-white text-black dark:bg-gray-800 dark:text-white flex-1"
                   />
                   <Input
                     value={item.url || ''}
                     onChange={(e) => updateTextItem(index, 'url', e.target.value)}
                     placeholder="https://example.com"
-                    className="glass-card border-primary/20 flex-1"
+                    className="glass-card border-primary/20 bg-white text-black dark:bg-gray-800 dark:text-white flex-1"
                   />
+                  <div className="flex gap-1 items-center">
+                    <Input
+                      type="color"
+                      value={item.textColor || '#000000'}
+                      onChange={(e) => {
+                        const v = e.target.value;
+                        setEditLink(prev => ({
+                          ...prev,
+                          textItems: prev.textItems?.map((it, i) => i === index ? { ...it, textColor: v } : it) || []
+                        }));
+                      }}
+                      className="w-10 h-8 p-0"
+                    />
+                    <Input
+                      type="number"
+                      value={parseInt(item.fontSize || '14', 10)}
+                      onChange={(e) => {
+                        const v = `${e.target.value}px`;
+                        setEditLink(prev => ({
+                          ...prev,
+                          textItems: prev.textItems?.map((it, i) => i === index ? { ...it, fontSize: v } : it) || []
+                        }));
+                      }}
+                      className="w-20 h-8"
+                    />
+                      <Select
+                        value={item.fontFamily || 'Inter, system-ui, sans-serif'}
+                        onValueChange={(value: string) => {
+                          setEditLink(prev => ({
+                            ...prev,
+                            textItems: prev.textItems?.map((it, i) => i === index ? { ...it, fontFamily: value } : it) || []
+                          }));
+                        }}
+                      >
+                        <SelectTrigger className="h-8 w-36 bg-white text-black">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value={"Inter, system-ui, sans-serif"}>Inter</SelectItem>
+                          <SelectItem value={"Arial, Helvetica, sans-serif"}>Arial</SelectItem>
+                          <SelectItem value={"Georgia, serif"}>Georgia</SelectItem>
+                          <SelectItem value={"'Times New Roman', Times, serif"}>Times New Roman</SelectItem>
+                          <SelectItem value={"'Courier New', Courier, monospace"}>Courier New</SelectItem>
+                          <SelectItem value={"Verdana, Geneva, sans-serif"}>Verdana</SelectItem>
+                        </SelectContent>
+                      </Select>
+                  </div>
                   <Button
                     type="button"
                     variant="ghost"
@@ -186,7 +289,7 @@ export const TextCard = ({ link, onUpdate, onDelete, isDragging, onMoveUp, onMov
               value={editLink.content || ''}
               onChange={(e) => setEditLink(prev => ({ ...prev, content: e.target.value }))}
               placeholder="Additional text content (optional)&#10;&#10;Tips:&#10;• Use * or - for bullet points&#10;• Use 1. 2. 3. for numbered lists&#10;• Use line breaks for paragraphs"
-              className="glass-card border-primary/20 resize-none"
+              className="glass-card border-primary/20 bg-white text-black dark:bg-gray-800 dark:text-white resize-none"
               rows={4}
             />
             <Input
@@ -233,7 +336,7 @@ export const TextCard = ({ link, onUpdate, onDelete, isDragging, onMoveUp, onMov
                   setEditLink(prev => ({ ...prev, size: value }))
                 }
               >
-                <SelectTrigger className="glass-card border-primary/20">
+                <SelectTrigger className="glass-card border-primary/20 bg-white text-black dark:bg-gray-800 dark:text-white">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -295,13 +398,13 @@ export const TextCard = ({ link, onUpdate, onDelete, isDragging, onMoveUp, onMov
                 {!link.url && <Type className="w-4 h-4 text-primary opacity-0 group-hover:opacity-100 transition-smooth" />}
               </div>
               {link.textItems && link.textItems.length > 0 && (
-                <ul className="text-sm leading-relaxed space-y-2 mb-3">
-                  {link.textItems.map((item, index) => (
+                <ul className="text-sm leading-relaxed space-y-2 mb-3" style={{ textAlign: link.alignment as any }}>
+                  {link.textItems.map((item: any, index) => (
                     <li key={index} className="flex">
                       <span className="mr-2">•</span>
                       <div className="flex-1 min-w-0">
                         {/* Name/label on its own line */}
-                        <div style={{ color: link.textColor }}>{item.text}</div>
+                        <div style={{ color: item.textColor || link.textColor, fontSize: item.fontSize || undefined, fontFamily: item.fontFamily || link.descriptionFontFamily || undefined }}>{item.text}</div>
                         {/* Link on a second indented line, no wrap, horizontal scroll if too long */}
                         {item.url && (
                           <button

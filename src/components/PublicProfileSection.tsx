@@ -16,6 +16,8 @@ interface ProfileData {
     facebook?: string;
     twitter?: string;
   };
+  nameFontSize?: string;
+  bioFontSize?: string;
 }
 
 interface PublicProfileSectionProps {
@@ -28,17 +30,15 @@ export const PublicProfileSection = ({ profile }: PublicProfileSectionProps) => 
   return (
     <Card className="glass-card p-8 text-center transition-smooth hover:glow-effect">
       {profile.showAvatar !== false && (
-        <div className="mb-6">
-          <Avatar className="w-24 h-24 mx-auto">
-            <AvatarImage src={profile.avatar || profileAvatar} alt={profile.name} />
-            <AvatarFallback className="text-2xl font-bold gradient-text">
-              {profile.name.charAt(0) || 'U'}
-            </AvatarFallback>
+        <div className="mb-6 flex justify-center">
+          <Avatar className="w-28 h-28">
+            <AvatarImage className="object-cover object-center" src={getAvatarUrl(profile.avatar)} alt={profile.name || 'Profile avatar'} />
+            <AvatarFallback className="text-4xl font-bold gradient-text">{profile.name?.charAt(0) ?? 'U'}</AvatarFallback>
           </Avatar>
         </div>
       )}
       <div className="space-y-4">
-        <h1 className="text-2xl font-bold text-foreground mb-2">
+        <h1 className="font-bold text-foreground mb-2" style={{ ...(profile.nameFontSize ? { fontSize: profile.nameFontSize } : { fontSize: '2rem' }) }}>
           {profile.name || "Your Name"}
         </h1>
         
@@ -99,7 +99,7 @@ export const PublicProfileSection = ({ profile }: PublicProfileSectionProps) => 
         )}
         
         {hasBio && (
-          <p className="text-muted-foreground leading-relaxed whitespace-pre-line">
+          <p className="text-muted-foreground leading-relaxed whitespace-pre-line" style={{ ...(profile.bioFontSize ? { fontSize: profile.bioFontSize } : {}) }}>
             {profile.bio}
           </p>
         )}
@@ -107,3 +107,10 @@ export const PublicProfileSection = ({ profile }: PublicProfileSectionProps) => 
     </Card>
   );
 };
+
+function getAvatarUrl(avatar?: string | null) {
+  if (!avatar) return profileAvatar as unknown as string;
+  if (avatar.startsWith('data:') || avatar.startsWith('blob:') || avatar.startsWith('http')) return avatar;
+  if (avatar.startsWith('/')) return avatar;
+  return `/uploads/${avatar.replace(/^\/+/, '')}`;
+}

@@ -52,6 +52,9 @@ export const initializeDatabase = () => {
 
       // Ensure show_avatar column exists for existing databases (best-effort migration)
       db.run(`ALTER TABLE profile_data ADD COLUMN show_avatar BOOLEAN DEFAULT 1`, (err) => { /* ignore if exists */ });
+  // Ensure per-profile font size columns exist (best-effort migration)
+  db.run(`ALTER TABLE profile_data ADD COLUMN name_font_size TEXT`, (err) => { /* ignore if exists */ });
+  db.run(`ALTER TABLE profile_data ADD COLUMN bio_font_size TEXT`, (err) => { /* ignore if exists */ });
 
       // Links table
       db.run(`
@@ -75,6 +78,14 @@ export const initializeDatabase = () => {
       db.run(`ALTER TABLE links ADD COLUMN size TEXT`, (err) => { /* ignore if exists */ });
       db.run(`ALTER TABLE links ADD COLUMN icon_type TEXT`, (err) => { /* ignore if exists */ });
       db.run(`ALTER TABLE links ADD COLUMN content TEXT`, (err) => { /* ignore if exists */ });
+  // Add columns for per-link typography and alignment
+  db.run(`ALTER TABLE links ADD COLUMN title_font_family TEXT`, (err) => { /* ignore if exists */ });
+  db.run(`ALTER TABLE links ADD COLUMN description_font_family TEXT`, (err) => { /* ignore if exists */ });
+  db.run(`ALTER TABLE links ADD COLUMN text_alignment TEXT`, (err) => { /* ignore if exists */ });
+  db.run(`ALTER TABLE links ADD COLUMN title_font_size TEXT`, (err) => { /* ignore if exists */ });
+  db.run(`ALTER TABLE links ADD COLUMN description_font_size TEXT`, (err) => { /* ignore if exists */ });
+  db.run(`ALTER TABLE links ADD COLUMN title_font_size TEXT`, (err) => { /* ignore if exists */ });
+  db.run(`ALTER TABLE links ADD COLUMN description_font_size TEXT`, (err) => { /* ignore if exists */ });
       // Theme configuration table
       db.run(`
         CREATE TABLE IF NOT EXISTS theme_config (

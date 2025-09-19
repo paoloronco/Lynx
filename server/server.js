@@ -257,10 +257,23 @@ app.get('/api/profile', async (req, res) => {
       if (avatar.startsWith('data:') || avatar.startsWith('http://') || avatar.startsWith('https://')) return avatar;
       // Normalize old dev path to built assets path
       if (avatar.includes('/src/assets/profile-avatar')) return '/assets/profile-avatar.jpg';
-      // Ensure leading slash
-      if (!avatar.startsWith('/')) return `/${avatar}`;
+
+      // Normalize path separators and collapse duplicate uploads segments
+      try {
+        avatar = String(avatar).replace(/\\/g, '/');
+        // Collapse multiple leading slashes
+        avatar = avatar.replace(/^\/+/, '/');
+        // Collapse repeated '/uploads/uploads/...'' to single '/uploads/'
+        avatar = avatar.replace(/(\/uploads)+\//i, '/uploads/');
+      } catch (e) {
+        // ignore and continue
+      }
+
       // If it points to /public during dev, map to dist root file
       if (avatar.startsWith('/public/')) return avatar.replace('/public/', '/');
+
+      // Ensure leading slash
+      if (!avatar.startsWith('/')) return `/${avatar}`;
       return avatar;
     };
 
@@ -271,7 +284,9 @@ app.get('/api/profile', async (req, res) => {
         bio: "Digital creator & entrepreneur sharing my favorite tools and resources. Follow along for the latest in tech, design, and productivity.",
         avatar: "/assets/profile-avatar.jpg",
         social_links: {},
-        show_avatar: 1
+        show_avatar: 1,
+        name_font_size: '2rem',
+        bio_font_size: '14px'
       });
     }
     
@@ -280,7 +295,9 @@ app.get('/api/profile', async (req, res) => {
       bio: profile.bio,
       avatar: normalizeAvatar(profile.avatar) || '/assets/profile-avatar.jpg',
       social_links: safeJsonParse(profile.social_links, {}),
-      show_avatar: profile.show_avatar === 0 ? 0 : 1
+      show_avatar: profile.show_avatar === 0 ? 0 : 1,
+      name_font_size: profile.name_font_size || '2rem',
+      bio_font_size: profile.bio_font_size || '14px'
     });
   } catch (error) {
     res.status(500).json({ error: 'Failed to load profile' });
@@ -294,6 +311,8 @@ app.put('/api/profile', authenticateToken, async (req, res) => {
     const bio = req.body.bio;
     const avatar = req.body.avatar;
     const socialLinks = req.body.socialLinks ?? req.body.social_links ?? {};
+  const nameFontSize = req.body.nameFontSize ?? req.body.name_font_size ?? null;
+  const bioFontSize = req.body.bioFontSize ?? req.body.bio_font_size ?? null;
     const showAvatarRaw = req.body.showAvatar ?? req.body.show_avatar;
     const showAvatar = typeof showAvatarRaw === 'number' ? showAvatarRaw !== 0 : !!showAvatarRaw;
 
@@ -302,13 +321,13 @@ app.put('/api/profile', authenticateToken, async (req, res) => {
     
     if (existing) {
       await dbRun(
-        'UPDATE profile_data SET name = ?, bio = ?, avatar = ?, social_links = ?, show_avatar = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
-        [name, bio, avatar, JSON.stringify(socialLinks || {}), showAvatar ? 1 : 0, existing.id]
+        'UPDATE profile_data SET name = ?, bio = ?, avatar = ?, social_links = ?, show_avatar = ?, name_font_size = ?, bio_font_size = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
+        [name, bio, avatar, JSON.stringify(socialLinks || {}), showAvatar ? 1 : 0, nameFontSize, bioFontSize, existing.id]
       );
     } else {
       await dbRun(
-        'INSERT INTO profile_data (name, bio, avatar, social_links, show_avatar) VALUES (?, ?, ?, ?, ?)',
-        [name, bio, avatar, JSON.stringify(socialLinks || {}), showAvatar ? 1 : 0]
+        'INSERT INTO profile_data (name, bio, avatar, social_links, show_avatar, name_font_size, bio_font_size) VALUES (?, ?, ?, ?, ?, ?, ?)',
+        [name, bio, avatar, JSON.stringify(socialLinks || {}), showAvatar ? 1 : 0, nameFontSize, bioFontSize]
       );
     }
     
@@ -352,6 +371,11 @@ app.get('/api/links', async (req, res) => {
         textItems: link.text_items ? (() => { try { return JSON.parse(link.text_items); } catch { return null; } })() : null,
         type: link.type || 'link',
         backgroundColor: link.background_color || undefined,
+  titleFontFamily: link.title_font_family || undefined,
+  descriptionFontFamily: link.description_font_family || undefined,
+  alignment: link.text_alignment || undefined,
+  titleFontSize: link.title_font_size || undefined,
+  descriptionFontSize: link.description_font_size || undefined,
         textColor: link.text_color || undefined,
         order: link.link_order || 0,
         size: link.size || 'medium',
@@ -380,6 +404,11 @@ app.get('/api/links/export', authenticateToken, async (req, res) => {
       icon: link.icon || null,
       iconType: link.icon_type || null,
       backgroundColor: link.background_color || null,
+      titleFontFamily: link.title_font_family || null,
+      descriptionFontFamily: link.description_font_family || null,
+      alignment: link.text_alignment || null,
+      titleFontSize: link.title_font_size || null,
+      descriptionFontSize: link.description_font_size || null,
       textColor: link.text_color || null,
       size: link.size || null,
       content: link.content || null,
@@ -412,10 +441,16 @@ app.post('/api/links/import', authenticateToken, async (req, res) => {
       icon: l.icon ?? null,
       iconType: l.iconType ?? null,
       backgroundColor: l.backgroundColor ?? null,
+  titleFontFamily: l.titleFontFamily ?? null,
+  descriptionFontFamily: l.descriptionFontFamily ?? null,
+  alignment: l.alignment ?? null,
+  titleFontSize: l.titleFontSize ?? null,
+  descriptionFontSize: l.descriptionFontSize ?? null,
       textColor: l.textColor ?? null,
       size: l.size ?? null,
       content: l.content ?? null,
-      textItems: Array.isArray(l.textItems) ? l.textItems : null,
+      // Preserve text item style fields if present
+      textItems: Array.isArray(l.textItems) ? l.textItems.map(item => typeof item === 'string' ? { text: item } : ({ text: item.text, url: item.url || '', textColor: item.textColor || null, fontSize: item.fontSize || null, fontFamily: item.fontFamily || null })) : null,
     }));
 
     await dbRun('DELETE FROM links');
@@ -428,25 +463,28 @@ app.post('/api/links/import', authenticateToken, async (req, res) => {
             )
           )
         : null;
-      await dbRun(
-        'INSERT INTO links (id, title, description, url, icon, type, text_items, sort_order, is_active, background_color, text_color, size, icon_type, content) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-        [
-          String(link.id),
-          link.title,
-          link.description,
-          link.url,
-          link.icon,
-          link.type,
-          textItemsValue,
-          i,
-          1,
-          link.backgroundColor,
-          link.textColor,
-          link.size,
-          link.iconType,
-          link.content,
-        ]
-      );
+        await dbRun(
+          'INSERT INTO links (id, title, description, url, icon, type, text_items, sort_order, is_active, background_color, text_color, size, icon_type, content, title_font_family, description_font_family, text_alignment, title_font_size, description_font_size) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+          [
+            String(link.id),
+            link.title,
+            link.description,
+            link.url,
+            iconValue,
+            link.type || 'link',
+            textItemsValue,
+            i,
+            1,
+            link.backgroundColor || null,
+            link.textColor || null,
+            link.size || null,
+            link.iconType || (iconValue ? 'image' : null),
+            link.content || null,
+            link.titleFontFamily || null,
+            link.descriptionFontFamily || null,
+            link.alignment || null
+          ]
+        );
     }
     res.json({ success: true, count: normalized.length });
   } catch (error) {
@@ -484,8 +522,11 @@ const LinkSchema = z.object({
       z.union([
         z.string().max(1000),
         z.object({ 
-          text: z.string().max(1000), 
-          url: z.string().max(5000).optional() 
+            text: z.string().max(1000), 
+            url: z.string().max(5000).optional(),
+            textColor: z.string().max(100).nullable().optional(),
+            fontSize: z.string().max(50).nullable().optional(),
+            fontFamily: z.string().max(200).nullable().optional()
         })
       ])
     )
@@ -495,11 +536,18 @@ const LinkSchema = z.object({
       items ? items.map(item => ({
         ...(typeof item === 'string' ? { text: item } : item),
         text: String(item.text || '').slice(0, 1000),
-        url: item.url ? String(item.url).slice(0, 5000) : undefined
+        url: item.url ? String(item.url).slice(0, 5000) : undefined,
+        textColor: item.textColor ? String(item.textColor).slice(0, 100) : undefined,
+        fontSize: item.fontSize ? String(item.fontSize).slice(0, 50) : undefined,
+        fontFamily: item.fontFamily ? String(item.fontFamily).slice(0, 200) : undefined
       })) : null
     ),
   backgroundColor: z.string().max(100).nullable().optional(),
   textColor: z.string().max(100).nullable().optional(),
+  // New typography fields
+  titleFontFamily: z.string().max(200).nullable().optional(),
+  descriptionFontFamily: z.string().max(200).nullable().optional(),
+  alignment: z.enum(['left','center','right']).nullable().optional(),
   size: z.string().max(50).nullable().optional(),
   iconType: z.string().max(100).nullable().optional(),
   content: z.string().max(10000).nullable().optional(),
@@ -511,6 +559,9 @@ const LinkSchema = z.object({
   icon: link.icon ? String(link.icon).slice(0, 2000000) : null,
   backgroundColor: link.backgroundColor ? String(link.backgroundColor).slice(0, 100) : null,
   textColor: link.textColor ? String(link.textColor).slice(0, 100) : null,
+  titleFontFamily: link.titleFontFamily ? String(link.titleFontFamily).slice(0,200) : null,
+  descriptionFontFamily: link.descriptionFontFamily ? String(link.descriptionFontFamily).slice(0,200) : null,
+  alignment: link.alignment ? String(link.alignment).slice(0,10) : null,
   size: link.size ? String(link.size).slice(0, 50) : null,
   iconType: link.iconType ? String(link.iconType).slice(0, 100) : null,
   content: link.content ? String(link.content).slice(0, 10000) : null
@@ -520,6 +571,7 @@ const LinksPayloadSchema = z.array(LinkSchema).max(200);
 app.put('/api/links', authenticateToken, async (req, res) => {
   try {
     console.log('[/api/links] Received request to update links');
+    console.log('[/api/links] Raw body preview:', JSON.stringify(req.body).slice(0, 2000));
     if (!Array.isArray(req.body)) {
       console.error('[/api/links] Error: Request body is not an array');
       return res.status(400).json({ error: 'Request body must be an array of links.' });
@@ -578,13 +630,13 @@ app.put('/api/links', authenticateToken, async (req, res) => {
         const textItemsValue = Array.isArray(link.textItems)
           ? JSON.stringify(
               link.textItems.map((item) =>
-                typeof item === 'string' ? { text: item } : { text: item.text, url: item.url || '' }
+                typeof item === 'string' ? { text: item } : { text: item.text, url: item.url || '', textColor: item.textColor || null, fontSize: item.fontSize || null, fontFamily: item.fontFamily || null }
               )
             )
           : null;
           
         await dbRun(
-          'INSERT INTO links (id, title, description, url, icon, type, text_items, sort_order, is_active, background_color, text_color, size, icon_type, content) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+          'INSERT INTO links (id, title, description, url, icon, type, text_items, sort_order, is_active, background_color, text_color, size, icon_type, content, title_font_family, description_font_family, text_alignment, title_font_size, description_font_size) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
           [
             typeof link.id === 'string' ? link.id : String(link.id),
             link.title,
@@ -599,7 +651,12 @@ app.put('/api/links', authenticateToken, async (req, res) => {
             link.textColor || null,
             link.size || null,
             link.iconType || (iconValue ? 'image' : null),
-            link.content || null
+            link.content || null,
+            link.titleFontFamily || null,
+            link.descriptionFontFamily || null,
+            link.alignment || null,
+            link.titleFontSize || null,
+            link.descriptionFontSize || null
           ]
         );
       }
