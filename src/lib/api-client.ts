@@ -350,19 +350,34 @@ export const linksApi = {
   },
 
   export: async (): Promise<Blob> => {
-    const token = await getAuthTokenAsync();
-    const resp = await fetch(`${API_BASE}/links/export`, {
-      headers: token ? { Authorization: `Bearer ${token}` } : {},
-    });
-    if (!resp.ok) throw new Error('Export failed');
-    return await resp.blob();
+    try {
+      const token = await getAuthTokenAsync();
+      const resp = await fetch(`${API_BASE}/links/export`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+      
+      if (!resp.ok) {
+        const errorData = await resp.json().catch(() => ({}));
+        throw new Error(errorData.error || 'Export failed');
+      }
+      
+      return await resp.blob();
+    } catch (error) {
+      console.error('Export error:', error);
+      throw error;
+    }
   },
 
   import: async (data: any[]): Promise<ApiResponse> => {
-    return apiRequest<ApiResponse>('/links/import', {
-      method: 'POST',
-      body: JSON.stringify(data),
-    });
+    try {
+      return await apiRequest<ApiResponse>('/links/import', {
+        method: 'POST',
+        body: JSON.stringify(data),
+      });
+    } catch (error) {
+      console.error('Import error:', error);
+      throw error;
+    }
   },
 };
 

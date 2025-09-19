@@ -4,6 +4,8 @@ import { Card } from "@/components/ui/card";
 import { Plus, Link, Type, Upload, Download } from "lucide-react";
 import { LinkCard, LinkData } from "./LinkCard";
 import { TextCard } from "./TextCard";
+import { useToast } from "@/components/ui/use-toast";
+import { linksApi } from "@/lib/api-client";
 
 interface LinkManagerProps {
   links: LinkData[];
@@ -15,6 +17,7 @@ export const LinkManager = ({ links, onLinksUpdate }: LinkManagerProps) => {
   const [draggedItem, setDraggedItem] = useState<string | null>(null);
   const [dragOverId, setDragOverId] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const { toast } = useToast();
   // Maintain a working copy to allow fluid drag reordering without spamming saves
   const [workingLinks, setWorkingLinks] = useState<LinkData[]>(links);
   const [isDirty, setIsDirty] = useState(false);
@@ -124,8 +127,19 @@ export const LinkManager = ({ links, onLinksUpdate }: LinkManagerProps) => {
       a.click();
       a.remove();
       URL.revokeObjectURL(url);
-    } catch (e) {
-      console.error(e);
+      
+      toast({
+        title: "Export Successful",
+        description: "Links exported successfully",
+        variant: "default"
+      });
+    } catch (error) {
+      console.error('Export error:', error);
+      toast({
+        title: "Export Failed",
+        description: error instanceof Error ? error.message : "Failed to export links",
+        variant: "destructive"
+      });
     } finally {
       setBusy(false);
     }
@@ -137,10 +151,34 @@ export const LinkManager = ({ links, onLinksUpdate }: LinkManagerProps) => {
       setBusy(true);
       const text = await file.text();
       const data = JSON.parse(text);
+      
+      if (!Array.isArray(data)) {
+        throw new Error('Invalid file format: Expected an array of links');
+      }
+
       const { linksApi } = await import('@/lib/api-client');
       await linksApi.import(data);
-    } catch (e) {
-      console.error(e);
+      
+      // Refresh the links after successful import
+      const updatedLinks = await linksApi.get();
+      setWorkingLinks(updatedLinks.map(link => ({
+        ...link,
+        type: link.type as 'link' | 'text'
+      })));
+      setIsDirty(false);
+      
+      toast({
+        title: "Import Successful",
+        description: `Imported ${data.length} links successfully`,
+        variant: "default"
+      });
+    } catch (error) {
+      console.error('Import error:', error);
+      toast({
+        title: "Import Failed",
+        description: error instanceof Error ? error.message : "Failed to import links",
+        variant: "destructive"
+      });
     } finally {
       setBusy(false);
     }

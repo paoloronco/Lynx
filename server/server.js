@@ -412,7 +412,13 @@ app.get('/api/links/export', authenticateToken, async (req, res) => {
       textColor: link.text_color || null,
       size: link.size || null,
       content: link.content || null,
-      textItems: link.text_items ? JSON.parse(link.text_items) : null,
+      textItems: link.text_items ? (() => {
+        try {
+          return JSON.parse(link.text_items);
+        } catch {
+          return null;
+        }
+      })() : null,
       sortOrder: link.sort_order,
       isActive: link.is_active,
     }));
@@ -426,85 +432,82 @@ app.get('/api/links/export', authenticateToken, async (req, res) => {
 
 // Import links from JSON
 app.post('/api/links/import', authenticateToken, async (req, res) => {
-  try {
-    if (!Array.isArray(req.body)) {
-      return res.status(400).json({ error: 'Invalid payload: expected an array' });
-    }
-    const incoming = req.body;
-    // Basic shape normalization
-    const normalized = incoming.map((l, i) => ({
-      id: String(l.id ?? i + 1),
-      title: String(l.title ?? ''),
-      description: String(l.description ?? ''),
-      url: String(l.url ?? ''),
-      type: String(l.type ?? 'link'),
-      icon: l.icon ?? null,
-      iconType: l.iconType ?? null,
-      backgroundColor: l.backgroundColor ?? null,
-  titleFontFamily: l.titleFontFamily ?? null,
-  descriptionFontFamily: l.descriptionFontFamily ?? null,
-  alignment: l.alignment ?? null,
-  titleFontSize: l.titleFontSize ?? null,
-  descriptionFontSize: l.descriptionFontSize ?? null,
-      textColor: l.textColor ?? null,
-      size: l.size ?? null,
-      content: l.content ?? null,
-      // Preserve text item style fields if present
-      textItems: Array.isArray(l.textItems) ? l.textItems.map(item => typeof item === 'string' ? { text: item } : ({ text: item.text, url: item.url || '', textColor: item.textColor || null, fontSize: item.fontSize || null, fontFamily: item.fontFamily || null })) : null,
-    }));
+  if (!Array.isArray(req.body)) {
+    return res.status(400).json({ error: 'Invalid payload: expected an array' });
+  }
 
-    await dbRun('DELETE FROM links');
-    for (let i = 0; i < normalized.length; i++) {
-      const link = normalized[i];
-      const textItemsValue = Array.isArray(link.textItems)
-        ? JSON.stringify(
-            link.textItems.map((item) =>
-              typeof item === 'string' ? { text: item } : { text: item.text, url: item.url || '' }
-            )
-          )
-        : null;
+  try {
+    // Validate the incoming data against our schema
+    const validationResult = LinksPayloadSchema.safeParse(req.body);
+    if (!validationResult.success) {
+      return res.status(400).json({ 
+        error: 'Invalid link data', 
+        details: validationResult.error 
+      });
+    }
+
+    const links = validationResult.data;
+    
+    // Start transaction for atomic import
+    await dbRun('BEGIN TRANSACTION');
+
+    try {
+      // Clear existing links
+      await dbRun('DELETE FROM links');
+      
+      // Insert new links
+      for (const [index, link] of links.entries()) {
         await dbRun(
-          'INSERT INTO links (id, title, description, url, icon, type, text_items, sort_order, is_active, background_color, text_color, size, icon_type, content, title_font_family, description_font_family, text_alignment, title_font_size, description_font_size) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+          `INSERT INTO links (
+            id, title, description, url, type, icon, icon_type,
+            background_color, text_color, size, content,
+            title_font_family, description_font_family,
+            text_alignment, text_items, sort_order, is_active
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
           [
-            String(link.id),
+            link.id || String(index + 1),
             link.title,
             link.description,
             link.url,
-            iconValue,
-            link.type || 'link',
-            textItemsValue,
-            i,
-            1,
-            link.backgroundColor || null,
-            link.textColor || null,
-            link.size || null,
-            link.iconType || (iconValue ? 'image' : null),
-            link.content || null,
-            link.titleFontFamily || null,
-            link.descriptionFontFamily || null,
-            link.alignment || null
+            link.type,
+            link.icon,
+            link.iconType,
+            link.backgroundColor,
+            link.textColor,
+            link.size,
+            link.content,
+            link.titleFontFamily,
+            link.descriptionFontFamily,
+            link.alignment,
+            link.textItems ? JSON.stringify(link.textItems) : null,
+            index,
+            1
           ]
         );
+      }
+      
+      await dbRun('COMMIT');
+      res.json({ success: true, count: links.length });
+    } catch (error) {
+      await dbRun('ROLLBACK');
+      throw error;
     }
-    res.json({ success: true, count: normalized.length });
   } catch (error) {
+    console.error('Import error:', error);
     res.status(500).json({ error: 'Failed to import links' });
   }
 });
 
 // Define strict validation schema to avoid type confusion
+// Define schema for link validation
 const LinkSchema = z.object({
-  // Accept string IDs from frontend (Date.now().toString())
   id: z.union([z.string().min(1), z.number().int().nonnegative()]),
   title: z.string().min(1).max(500),
   description: z.string().max(2000).optional().default(''),
   url: z.string().max(5000).optional().default(''),
   icon: z.union([
-    // Allow base64 images (can be very long)
     z.string().startsWith('data:image/').max(2000000).nullable(),
-    // Or regular URLs
     z.string().url().max(5000).nullable(),
-    // Or objects with url property
     z.object({
       url: z.string().max(5000)
     }).transform(obj => obj.url)
@@ -515,57 +518,28 @@ const LinkSchema = z.object({
     z.object({
       type: z.string().max(50)
     }).transform(obj => obj.type)
-  ]).optional().default(undefined),
-  // Support structured text items [{ text, url? }]
-  textItems: z
-    .array(
-      z.union([
-        z.string().max(1000),
-        z.object({ 
-            text: z.string().max(1000), 
-            url: z.string().max(5000).optional(),
-            textColor: z.string().max(100).nullable().optional(),
-            fontSize: z.string().max(50).nullable().optional(),
-            fontFamily: z.string().max(200).nullable().optional()
-        })
-      ])
-    )
-    .nullable()
-    .optional()
-    .transform(items => 
-      items ? items.map(item => ({
-        ...(typeof item === 'string' ? { text: item } : item),
-        text: String(item.text || '').slice(0, 1000),
-        url: item.url ? String(item.url).slice(0, 5000) : undefined,
-        textColor: item.textColor ? String(item.textColor).slice(0, 100) : undefined,
-        fontSize: item.fontSize ? String(item.fontSize).slice(0, 50) : undefined,
-        fontFamily: item.fontFamily ? String(item.fontFamily).slice(0, 200) : undefined
-      })) : null
-    ),
+  ]).nullable().optional(),
+  textItems: z.array(
+    z.union([
+      z.string().max(1000),
+      z.object({ 
+        text: z.string().max(1000), 
+        url: z.string().max(5000).optional(),
+        textColor: z.string().max(100).nullable().optional(),
+        fontSize: z.string().max(50).nullable().optional(),
+        fontFamily: z.string().max(200).nullable().optional()
+      })
+    ])
+  ).nullable().optional(),
   backgroundColor: z.string().max(100).nullable().optional(),
   textColor: z.string().max(100).nullable().optional(),
-  // New typography fields
   titleFontFamily: z.string().max(200).nullable().optional(),
   descriptionFontFamily: z.string().max(200).nullable().optional(),
   alignment: z.enum(['left','center','right']).nullable().optional(),
   size: z.string().max(50).nullable().optional(),
-  iconType: z.string().max(100).nullable().optional(),
-  content: z.string().max(10000).nullable().optional(),
-}).strip().transform(link => ({
-  ...link,
-  title: String(link.title || '').slice(0, 500),
-  description: String(link.description || '').slice(0, 2000),
-  url: link.url ? String(link.url).slice(0, 5000) : '',
-  icon: link.icon ? String(link.icon).slice(0, 2000000) : null,
-  backgroundColor: link.backgroundColor ? String(link.backgroundColor).slice(0, 100) : null,
-  textColor: link.textColor ? String(link.textColor).slice(0, 100) : null,
-  titleFontFamily: link.titleFontFamily ? String(link.titleFontFamily).slice(0,200) : null,
-  descriptionFontFamily: link.descriptionFontFamily ? String(link.descriptionFontFamily).slice(0,200) : null,
-  alignment: link.alignment ? String(link.alignment).slice(0,10) : null,
-  size: link.size ? String(link.size).slice(0, 50) : null,
-  iconType: link.iconType ? String(link.iconType).slice(0, 100) : null,
-  content: link.content ? String(link.content).slice(0, 10000) : null
-}));
+  content: z.string().max(10000).nullable().optional()
+}).strip();
+
 const LinksPayloadSchema = z.array(LinkSchema).max(200);
 
 app.put('/api/links', authenticateToken, async (req, res) => {
