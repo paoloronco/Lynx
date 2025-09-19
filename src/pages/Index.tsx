@@ -21,56 +21,15 @@ interface ProfileData {
 }
 
 const Index = () => {
+  // Start with empty/neutral profile while we load the real data from the API
   const [profile, setProfile] = useState<ProfileData>({
-    name: "Alex Johnson",
-    bio: "Digital creator & entrepreneur sharing my favorite tools and resources. Follow along for the latest in tech, design, and productivity.",
+    name: "",
+    bio: "",
     avatar: profileAvatar,
   });
 
-  const [links, setLinks] = useState<LinkData[]>([
-    {
-      id: "1",
-      title: "My Portfolio",
-      description: "Check out my latest work and projects",
-      url: "https://portfolio.example.com",
-      type: "link",
-    },
-    {
-      id: "2", 
-      title: "Blog",
-      description: "Thoughts on design, tech, and creativity",
-      url: "https://blog.example.com",
-      type: "link",
-    },
-    {
-      id: "3",
-      title: "Newsletter",
-      description: "Weekly insights delivered to your inbox",
-      url: "https://newsletter.example.com",
-      type: "link",
-    },
-    {
-      id: "4",
-      title: "Text card",
-      description: "",
-      url: "",
-      type: "text",
-      textItems: [
-        {
-          text: "website1",
-          url: "https://www.paoloronco.it"
-        },
-        {
-          text: "website2", 
-          url: "https://www.paolo.it"
-        },
-        {
-          text: "website3",
-          url: "https://www.ronco.it"
-        }
-      ]
-    },
-  ]);
+  // Start with an empty links array to avoid showing mock links on initial render
+  const [links, setLinks] = useState<LinkData[]>([]);
 
   // Load data and theme from database on mount
   useEffect(() => {

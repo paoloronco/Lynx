@@ -278,10 +278,10 @@ app.get('/api/profile', async (req, res) => {
     };
 
     if (!profile) {
-      // Return default profile. Use a public path that exists after build.
+      // Return a neutral empty profile to avoid showing sample data by default
       return res.json({
-        name: "Alex Johnson",
-        bio: "Digital creator & entrepreneur sharing my favorite tools and resources. Follow along for the latest in tech, design, and productivity.",
+        name: "",
+        bio: "",
         avatar: "/assets/profile-avatar.jpg",
         social_links: {},
         show_avatar: 1,

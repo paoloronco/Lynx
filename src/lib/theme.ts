@@ -83,9 +83,10 @@ export const defaultTheme: ThemeConfig = {
   // but we'll set CSS variables for them below when applying the theme.
   
   content: {
-    profileName: 'Alex Johnson',
-    profileBio: 'Digital creator & entrepreneur sharing my favorite tools and resources.',
-    footerText: 'Connect with me through these links',
+    // Keep content fields empty by default to avoid showing mock data before real values load
+    profileName: '',
+    profileBio: '',
+    footerText: '',
     adminTitle: 'Link Manager Admin'
   }
 };
