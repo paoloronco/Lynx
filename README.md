@@ -4,8 +4,6 @@
 
 [![Version](https://img.shields.io/badge/version-3.1.0-blue.svg)](https://github.com/paoloronco/Lynx)
 
-<a href="https://www.producthunt.com/products/github-182?embed=true&utm_source=badge-featured&utm_medium=badge&utm_source=badge-lynx&#0045;6" target="_blank"><img src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=1015536&theme=light&t=1758113807582" alt="Lynx - Your&#0032;personal&#0032;link&#0032;hub&#0032;—&#0032;open&#0045;source&#0032;&#0038;&#0032;self&#0045;hosted | Product Hunt" style="width: 250px; height: 54px;" width="250" height="54" /></a>
-
 **Lynx** is an open-source, self-hosted link manager that helps you gather all your digital touchpoints in a single page, with secure authentication and a fully customizable design.
 
 ---
@@ -32,14 +30,13 @@
 
 ## 🧪 Demo
 
-- 🌐 [Try Lynx Demo on Railway](https://lynx-demo.up.railway.app/)  
-- **Admin Panel**: [https://lynx-demo.up.railway.app/admin](https://lynx-demo.up.railway.app/admin)  
+- 🌐 [Try Lynx Demo on Railway]([[https://lynx-demo.up.railway.app/](https://lynx-demo.paoloronco.it/)](https://lynx-demo.paoloronco.it/))  
+- **Admin Panel**: [[https://lynx-demo.up.railway.app/admin](https://lynx-demo.paoloronco.it/)]
 - **Login**:  
   - User: `admin`  
   - Password: `demo123` (the password can't be changed)
 
-⚠️ This demo runs on a free Railway plan.  
-The database resets automatically every 15 minutes.
+⚠️ The database resets automatically every 15 minutes.
 
 
 ## ✨ Features
@@ -76,10 +73,6 @@ The database resets automatically every 15 minutes.
 
 #### Lynx Demo
 [![Watch the demo](./docs/demo.gif)](https://app.storylane.io/share/tjpm3tey6ven)
-
-#### How to deploy Lynx
-[![Lynx - Your Personal Links Hub](./docs/screenshots/Lynx-howtodeploy-finalyt.png)](https://www.youtube.com/watch?v=x1MVY4vreOk)
-
 
 ---
 
