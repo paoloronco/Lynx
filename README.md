@@ -30,8 +30,8 @@
 
 ## 🧪 Demo
 
-- 🌐 [Try Lynx Demo on Railway]([[https://lynx-demo.up.railway.app/](https://lynx-demo.paoloronco.it/)](https://lynx-demo.paoloronco.it/))  
-- **Admin Panel**: [[https://lynx-demo.up.railway.app/admin](https://lynx-demo.paoloronco.it/)]
+- 🌐 [Try Lynx Demo on Railway] [https://lynx-demo.paoloronco.it](https://lynx-demo.paoloronco.it/)]
+- **Admin Panel**: [[https://lynx-demo.paoloronco.it/admin](https://lynx-demo.paoloronco.it/)]
 - **Login**:  
   - User: `admin`  
   - Password: `demo123` (the password can't be changed)
