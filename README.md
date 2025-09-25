@@ -147,7 +147,7 @@ You can deploy **Lynx** on [Railway](https://railway.com) in a few steps:
 
 ## 📝 Changelog
 
-### v3.3.0
+### v3.3.1
 
 ### 🔧 Admin
 - Updated title to: “Lynx – Your personal links hub”
