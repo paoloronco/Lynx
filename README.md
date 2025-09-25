@@ -47,31 +47,29 @@
 
 ## ✨ Features
 
-* 📝 **Customizable** → themes, colors, fonts, and layouts
-* 🔐 **Secure Authentication** → bcryptjs password hashing + JWT tokens
-* 🛠 **Admin Panel** → manage links, themes, profile, and settings
-* 🗂 **Standalone** → no Firebase, Supabase, or external DBs
-* 🚀 **Deploy Anywhere** → Render, Railway, Docker, Linux Server, Heroku, GCP, DigitalOcean, Fly.io
-* 📱 **Mobile Responsive** → optimized for all devices
-* 🗄 **SQLite Database** → self-contained, file-based storage
+* 🎨 Full Customization → personalize colors, themes, fonts, text alignment, and layouts.
+* 📇 Flexible Link Management → create classic links, bulleted lists, or text cards (full-card clickable).
+* 🖼 Rich Media Support → add icons, emojis, or images to your links.
+* 🛠 Admin Dashboard → manage profile, links, and themes in a clean UI.
+* 📦 Import/Export → backup and restore links & themes in JSON with one click.
+* 🌍 Deploy Anywhere → easy setup on Railway, Render, Docker, GCP, DigitalOcean, Fly.io, and more.
+* 📱 Mobile-First → responsive design that looks great on any device.
+* 🗄 Standalone by Design → lightweight, no Firebase/Supabase required.
+* ⚡ Fast & Modern → built with Vite, React, and Tailwind CSS.
 
 ### 🔒 Security Features
 
-* Password Hashing: bcryptjs (12 salt rounds)
-* JWT Authentication: signed tokens (7-day expiry)
-* Database Safety: parameterized queries against SQLite
-* Session Security: cookies set HttpOnly and SameSite
+* 🔑 Password Security → bcryptjs hashing (12 salt rounds).
+* 🛡 Token-Based Auth → JWT with signed tokens (7-day expiry).
+* 💾 Database Protection → parameterized queries for SQLite, preventing SQL injection.
+* 🍪 Safe Sessions → HttpOnly + SameSite cookies to mitigate XSS/CSRF risks.
+* 🔍 Code Transparency → fully open-source for audits and improvements.
 
 ---
 
 ## 🛠 Tech Stack
 
-![Node.js](https://img.shields.io/badge/Node.js-339933?style=for-the-badge&logo=nodedotjs&logoColor=white)  
-![Express.js](https://img.shields.io/badge/Express.js-000000?style=for-the-badge&logo=express&logoColor=white)  
-![SQLite](https://img.shields.io/badge/SQLite-07405E?style=for-the-badge&logo=sqlite&logoColor=white)  
-![React](https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)  
-![Vite](https://img.shields.io/badge/Vite-646CFF?style=for-the-badge&logo=vite&logoColor=white)  
-![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-38B2AC?style=for-the-badge&logo=tailwindcss&logoColor=white)  
+<p align="center"> <img src="https://img.shields.io/badge/Node.js-339933?style=for-the-badge&logo=nodedotjs&logoColor=white" /> <img src="https://img.shields.io/badge/Express.js-000000?style=for-the-badge&logo=express&logoColor=white" /> <img src="https://img.shields.io/badge/SQLite-07405E?style=for-the-badge&logo=sqlite&logoColor=white" /> <img src="https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB" /> <img src="https://img.shields.io/badge/Vite-646CFF?style=for-the-badge&logo=vite&logoColor=white" /> <img src="https://img.shields.io/badge/Tailwind_CSS-38B2AC?style=for-the-badge&logo=tailwindcss&logoColor=white" /> </p>
 
 ---
 
@@ -143,12 +141,12 @@ You can deploy **Lynx** on [Railway](https://railway.com) in a few steps:
 
 ## 📝 Changelog
 
-### v3.4.0
+### v4.0.0
 
 ### 🔧 Admin
 * Updated title to: “Lynx – Your personal links hub”
 * **Profile**
- * Bio now supports **line breaks** (`whitespace-pre-line`)
+  - Bio now supports **line breaks** (`whitespace-pre-line`)
   - Empty bio is automatically hidden (no blank space left)
   - Social links are hidden when empty
   - Profile picture now displays correctly
@@ -157,8 +155,8 @@ You can deploy **Lynx** on [Railway](https://railway.com) in a few steps:
   - Improved Text Card rendering: Link name on the first line, URL on the second line (with horizontal scroll for long URLs)
   - Added support for image/emoji next to links
   - Added ability to insert either: 
-    * **Text Card** → full card with only text, entire card clickable via a single link
-    * **Bulleted List** → list with a title and multiple links underneath
+    * Text Card → full card with only text, entire card clickable via a single link
+    * Bulleted List → list with a title and multiple links underneath
   - Option to export/import links as JSON
   - Bug fixes in rendering icons, removing cards, and updating links
   - Fixed bugs with icons, card removal, and link updates
@@ -170,6 +168,7 @@ You can deploy **Lynx** on [Railway](https://railway.com) in a few steps:
 * **UI**
   - Updated footer to:
     `Powered by Lynx | Lynx - Your personal links hub`
+  - Possibility to change the `title` and `meta description`
 
 ---
 ## 📌 To-Do / Next Steps

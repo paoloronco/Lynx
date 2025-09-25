@@ -22,6 +22,8 @@ interface ProfileData {
   };
   nameFontSize?: string;
   bioFontSize?: string;
+  tabTitle?: string;
+  metaDescription?: string;
 }
 
 const Admin = () => {
@@ -69,6 +71,8 @@ const Admin = () => {
             socialLinks: profileData.social_links || {},
             nameFontSize: (profileData as any).name_font_size || (profileData as any).nameFontSize || undefined,
             bioFontSize: (profileData as any).bio_font_size || (profileData as any).bioFontSize || undefined,
+            tabTitle: (profileData as any).tab_title || (profileData as any).tabTitle || undefined,
+            metaDescription: (profileData as any).meta_description || (profileData as any).metaDescription || undefined,
           });
         }
 
@@ -150,6 +154,8 @@ const Admin = () => {
         showAvatar: typeof newProfile.showAvatar === 'boolean' ? newProfile.showAvatar : true,
         nameFontSize: newProfile.nameFontSize,
         bioFontSize: newProfile.bioFontSize,
+        tabTitle: newProfile.tabTitle,
+        metaDescription: newProfile.metaDescription,
       });
       setProfile(newProfile);
     } catch (error: any) {

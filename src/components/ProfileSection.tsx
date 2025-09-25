@@ -24,6 +24,9 @@ interface ProfileData {
   // Per-profile typography
   nameFontSize?: string;
   bioFontSize?: string;
+  // Site metadata
+  tabTitle?: string;
+  metaDescription?: string;
 }
 
 interface ProfileSectionProps {
@@ -261,6 +264,25 @@ export const ProfileSection = ({ profile, onProfileUpdate }: ProfileSectionProps
             className="glass-card border-primary/20 text-center resize-none"
             rows={3}
           />
+          <div className="space-y-1">
+            <Label className="text-xs">Browser Tab Title</Label>
+            <Input
+              value={editProfile.tabTitle || ''}
+              onChange={(e) => setEditProfile(prev => ({ ...prev, tabTitle: e.target.value }))}
+              placeholder="Title shown in browser tab"
+              className="glass-card border-primary/20 text-sm text-center"
+            />
+          </div>
+          <div className="space-y-1">
+            <Label className="text-xs">Meta Description</Label>
+            <Textarea
+              value={editProfile.metaDescription || ''}
+              onChange={(e) => setEditProfile(prev => ({ ...prev, metaDescription: e.target.value }))}
+              placeholder="Short description for search engines and previews"
+              className="glass-card border-primary/20 text-sm"
+              rows={2}
+            />
+          </div>
           
           {/* Social Links */}
           <div className="space-y-3 pt-4 border-t border-primary/10">

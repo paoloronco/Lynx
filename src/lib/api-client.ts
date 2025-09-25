@@ -185,6 +185,8 @@ interface ProfileResponse extends ApiResponse {
   showAvatar?: boolean;
   name_font_size?: string;
   bio_font_size?: string;
+  tab_title?: string;
+  meta_description?: string;
 }
 
 interface LinkItem {
@@ -319,7 +321,7 @@ export const profileApi = {
     });
   },
 
-  update: async (profile: { name: string; bio: string; avatar: string; socialLinks: Record<string, string>; showAvatar?: boolean; nameFontSize?: string; bioFontSize?: string }): Promise<ApiResponse> => {
+  update: async (profile: { name: string; bio: string; avatar: string; socialLinks: Record<string, string>; showAvatar?: boolean; nameFontSize?: string; bioFontSize?: string; tabTitle?: string; metaDescription?: string }): Promise<ApiResponse> => {
     return apiRequest<ApiResponse>('/profile', {
       method: 'PUT',
       body: JSON.stringify({
@@ -330,7 +332,9 @@ export const profileApi = {
         // backend expects snake_case; send numeric boolean for SQLite
         show_avatar: typeof profile.showAvatar === 'boolean' ? (profile.showAvatar ? 1 : 0) : 1,
         name_font_size: profile.nameFontSize || undefined,
-        bio_font_size: profile.bioFontSize || undefined
+        bio_font_size: profile.bioFontSize || undefined,
+        tab_title: profile.tabTitle || undefined,
+        meta_description: profile.metaDescription || undefined
       }),
     });
   },

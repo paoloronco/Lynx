@@ -46,6 +46,21 @@ const Index = () => {
             bioFontSize: (profileData as any).bio_font_size || (profileData as any).bioFontSize || undefined,
             socialLinks: profileData.social_links || {}
           });
+          // Apply document meta
+          const tabTitle = (profileData as any).tab_title || (profileData as any).tabTitle;
+          const metaDesc = (profileData as any).meta_description || (profileData as any).metaDescription;
+          if (tabTitle && typeof tabTitle === 'string') {
+            document.title = tabTitle;
+          }
+          if (metaDesc && typeof metaDesc === 'string') {
+            let tag = document.querySelector('meta[name="description"]');
+            if (!tag) {
+              tag = document.createElement('meta');
+              tag.setAttribute('name', 'description');
+              document.head.appendChild(tag);
+            }
+            tag.setAttribute('content', metaDesc);
+          }
         }
 
         // Load links data from database

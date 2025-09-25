@@ -46,6 +46,10 @@ export const initializeDatabase = () => {
           avatar TEXT,
           social_links TEXT,
           show_avatar BOOLEAN DEFAULT 1,
+          name_font_size TEXT,
+          bio_font_size TEXT,
+          tab_title TEXT,
+          meta_description TEXT,
           updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
         )
       `);
@@ -55,6 +59,9 @@ export const initializeDatabase = () => {
   // Ensure per-profile font size columns exist (best-effort migration)
   db.run(`ALTER TABLE profile_data ADD COLUMN name_font_size TEXT`, (err) => { /* ignore if exists */ });
   db.run(`ALTER TABLE profile_data ADD COLUMN bio_font_size TEXT`, (err) => { /* ignore if exists */ });
+      // Add profile meta columns
+      db.run(`ALTER TABLE profile_data ADD COLUMN tab_title TEXT`, (err) => { /* ignore if exists */ });
+      db.run(`ALTER TABLE profile_data ADD COLUMN meta_description TEXT`, (err) => { /* ignore if exists */ });
 
       // Links table
       db.run(`

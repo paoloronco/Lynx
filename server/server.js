@@ -286,7 +286,9 @@ app.get('/api/profile', async (req, res) => {
         social_links: {},
         show_avatar: 1,
         name_font_size: '2rem',
-        bio_font_size: '14px'
+        bio_font_size: '14px',
+        tab_title: undefined,
+        meta_description: undefined
       });
     }
     
@@ -297,7 +299,9 @@ app.get('/api/profile', async (req, res) => {
       social_links: safeJsonParse(profile.social_links, {}),
       show_avatar: profile.show_avatar === 0 ? 0 : 1,
       name_font_size: profile.name_font_size || '2rem',
-      bio_font_size: profile.bio_font_size || '14px'
+      bio_font_size: profile.bio_font_size || '14px',
+      tab_title: profile.tab_title || undefined,
+      meta_description: profile.meta_description || undefined
     });
   } catch (error) {
     res.status(500).json({ error: 'Failed to load profile' });
@@ -313,6 +317,8 @@ app.put('/api/profile', authenticateToken, async (req, res) => {
     const socialLinks = req.body.socialLinks ?? req.body.social_links ?? {};
   const nameFontSize = req.body.nameFontSize ?? req.body.name_font_size ?? null;
   const bioFontSize = req.body.bioFontSize ?? req.body.bio_font_size ?? null;
+    const tabTitle = req.body.tabTitle ?? req.body.tab_title ?? null;
+    const metaDescription = req.body.metaDescription ?? req.body.meta_description ?? null;
     const showAvatarRaw = req.body.showAvatar ?? req.body.show_avatar;
     const showAvatar = typeof showAvatarRaw === 'number' ? showAvatarRaw !== 0 : !!showAvatarRaw;
 
@@ -321,13 +327,13 @@ app.put('/api/profile', authenticateToken, async (req, res) => {
     
     if (existing) {
       await dbRun(
-        'UPDATE profile_data SET name = ?, bio = ?, avatar = ?, social_links = ?, show_avatar = ?, name_font_size = ?, bio_font_size = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
-        [name, bio, avatar, JSON.stringify(socialLinks || {}), showAvatar ? 1 : 0, nameFontSize, bioFontSize, existing.id]
+        'UPDATE profile_data SET name = ?, bio = ?, avatar = ?, social_links = ?, show_avatar = ?, name_font_size = ?, bio_font_size = ?, tab_title = ?, meta_description = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
+        [name, bio, avatar, JSON.stringify(socialLinks || {}), showAvatar ? 1 : 0, nameFontSize, bioFontSize, tabTitle, metaDescription, existing.id]
       );
     } else {
       await dbRun(
-        'INSERT INTO profile_data (name, bio, avatar, social_links, show_avatar, name_font_size, bio_font_size) VALUES (?, ?, ?, ?, ?, ?, ?)',
-        [name, bio, avatar, JSON.stringify(socialLinks || {}), showAvatar ? 1 : 0, nameFontSize, bioFontSize]
+        'INSERT INTO profile_data (name, bio, avatar, social_links, show_avatar, name_font_size, bio_font_size, tab_title, meta_description) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+        [name, bio, avatar, JSON.stringify(socialLinks || {}), showAvatar ? 1 : 0, nameFontSize, bioFontSize, tabTitle, metaDescription]
       );
     }
     
