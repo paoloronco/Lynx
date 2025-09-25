@@ -169,7 +169,10 @@ const Admin = () => {
         ...link,
         id: String(link.id),
         // ensure `type` is present (backend expects a type for each link)
-        type: (link as any).type || 'link'
+        type: (link as any).type || 'link',
+        // Explicitly include per-link font sizes so backend stores them
+        titleFontSize: (link as any).titleFontSize || undefined,
+        descriptionFontSize: (link as any).descriptionFontSize || undefined
       }));
       // Persist first; only update local state if backend succeeds
       await linksApi.update(formattedLinks);
@@ -191,6 +194,8 @@ const Admin = () => {
         titleFontFamily: (link as any).titleFontFamily || (link as any).titleFont || undefined,
         descriptionFontFamily: (link as any).descriptionFontFamily || undefined,
         alignment: (link as any).alignment || undefined,
+        titleFontSize: (link as any).titleFontSize || undefined,
+        descriptionFontSize: (link as any).descriptionFontSize || undefined,
         textItems: link.textItems
       }));
       setLinks(normalized);

@@ -2,7 +2,11 @@
 
 ### Your personal links hub
 
+<<<<<<< HEAD
 [![Version](https://img.shields.io/badge/version-3.1.0-blue.svg)](https://github.com/paoloronco/Lynx)
+=======
+[![Version](https://img.shields.io/badge/version-3.3.1-blue.svg)](https://github.com/paoloronco/Lynx)
+>>>>>>> 3a739df (v3.3.1)
 
 **Lynx** is an open-source, self-hosted link manager that helps you gather all your digital touchpoints in a single page, with secure authentication and a fully customizable design.
 
@@ -19,7 +23,6 @@
 2. [🚀 Quick Start](#-quick-start)  
    - [1. Clone, Install & Run](#1-clone-install--run)  
    - [2. 🚀 Deploy on Railway](#2--deploy-on-railway)  
-   - [3. 🚀 Deploy on Render](#2--deploy-on-render)  
    - [3. 🚀 Other alternatives to deploy it](#3--other-alteratives-to-deploy-it)  
 3. [📝 Changelog](#-changelog)  
 4. [📌 To-Do / Next Steps](#-to-do--next-steps)  
@@ -116,29 +119,9 @@ You can deploy **Lynx** on [Railway](https://railway.com) in a few steps:
 4. Click **Create** and wait for the deployment ✨
 5. Add a public domain in the settings 
 
-### 3. 🚀 Deploy on Render
+### 3. 🚀 Other alternatives to deploy it:
 
-You can deploy **Lynx** on [Render](https://render.com) in a few steps:
-
-0. Fork this repo (recommended)
-1. Go to **Render Dashboard → New → Web Service**
-2. Connect **GitHub repo (Lynx)**
-3. Set the following commands:
-   - **Build Command**
-     ```bash
-     npm install && npm run build && cd server && npm install
-     ```
-   - **Start Command**
-     ```bash
-     npm run start
-     ```
-4. Click **Create Web Service** and wait for the deployment ✨
-
-Your app will be available at a URL like: https://your-app.onrender.com
-
-
-### 4. 🚀 Other alternatives to deploy it:
-
+- [Render] (https://render.com/)
 - [DigitalOcean App Platform](https://www.digitalocean.com/products/app-platform)  
 - [Fly.io (Docker)](https://fly.io/docs/)  
 - [Heroku (Container)](https://devcenter.heroku.com/articles/container-registry-and-runtime)  
@@ -167,26 +150,26 @@ Your app will be available at a URL like: https://your-app.onrender.com
 ### v3.3.0
 
 ### 🔧 Admin
-- Interface title updated to: **“Lynx - Your personal links hub”**
+- Updated title to: “Lynx – Your personal links hub”
 - **Profile**
   - Bio now supports **line breaks** (`whitespace-pre-line`)
   - Empty bio is automatically hidden (no blank space left)
-  - Social links work properly → hidden if empty
-  - Profile picture now working properly
+  - Social links are hidden when empty
+  - Profile picture now displays correctly
 - **Links**
-  - Text color is now applied consistently across the entire card (title, description, URL)
-  - Improved **Text Card** rendering: each link is displayed on two lines
-    → Name on top, URL below (indented with horizontal scroll for long URLs)
-  - Bug fix: image/emoji next to link not working
-  - Ability to export/import Links as Json
+  - Consistent text color applied across title, description, and URL
+  - Improved Text Card rendering: Link name on the first line, URL on the second line (with horizontal scroll for long URLs)
+  - Added support for image/emoji next to links
+  - Option to export/import links as JSON
   - Bug fixes in rendering icons, removing cards, and updating links
-  - Ability to edit and personalize further links, with custom font types, size, alignment 
+  - Fixed bugs with icons, card removal, and link updates
+  - Extended customization: choose font, size, and alignment for links
 - **Theme**
-  - Removed duplicate *“Content”* tab (was a duplicate of name + bio)
-  - Partially removed **Typography** tab, to add it in the links and profile section, enhancing UX
-  - **Export/Import** now correctly saves and restores themes
+  - Removed duplicate “Content” tab (was redundant with name + bio)
+  - Partially removed Typography tab → now integrated into Links and Profile sections for better UX
+  - Export/Import now properly saves and restores themes
 - **UI**
-  - Footer updated to:  
+  - Updated footer to:
     `Powered by Lynx | Lynx - Your personal links hub`
 
 

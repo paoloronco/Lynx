@@ -66,7 +66,13 @@ const Index = () => {
               textColor: link.textColor,
               size: link.size,
               content: link.content,
-              textItems: link.textItems
+                textItems: link.textItems,
+                // Preserve per-link typography and alignment
+                titleFontFamily: (link as any).titleFontFamily || (link as any).titleFont || undefined,
+                descriptionFontFamily: (link as any).descriptionFontFamily || undefined,
+                titleFontSize: (link as any).titleFontSize || undefined,
+                descriptionFontSize: (link as any).descriptionFontSize || undefined,
+                alignment: (link as any).alignment || undefined
             };
           });
           setLinks(formattedLinks);

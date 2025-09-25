@@ -533,6 +533,9 @@ const LinkSchema = z.object({
   ).nullable().optional(),
   backgroundColor: z.string().max(100).nullable().optional(),
   textColor: z.string().max(100).nullable().optional(),
+  // Allow optional per-link font size strings (e.g. '16px')
+  titleFontSize: z.string().max(50).nullable().optional(),
+  descriptionFontSize: z.string().max(50).nullable().optional(),
   titleFontFamily: z.string().max(200).nullable().optional(),
   descriptionFontFamily: z.string().max(200).nullable().optional(),
   alignment: z.enum(['left','center','right']).nullable().optional(),
@@ -551,6 +554,26 @@ app.put('/api/links', authenticateToken, async (req, res) => {
       return res.status(400).json({ error: 'Request body must be an array of links.' });
     }
     console.log(`[/api/links] Received ${req.body.length} links to update`);
+    // Debug: log the keys and a small sample of expected typography fields for the first item
+    try {
+      const first = req.body[0] || {};
+      const keys = Object.keys(first).slice(0, 200);
+      const safe = (v) => {
+        if (v === null || typeof v === 'undefined') return v;
+        if (typeof v === 'string') return v.length > 200 ? v.slice(0, 200) + '...<truncated>' : v;
+        return v;
+      };
+      console.log('[/api/links] Incoming first item keys:', keys);
+      console.log('[/api/links] Incoming sample typography fields:', {
+        titleFontFamily: safe(first.titleFontFamily || first.titleFont || first.title_font_family),
+        descriptionFontFamily: safe(first.descriptionFontFamily || first.description_font_family),
+        titleFontSize: safe(first.titleFontSize || first.title_font_size),
+        descriptionFontSize: safe(first.descriptionFontSize || first.description_font_size),
+        alignment: safe(first.alignment || first.text_alignment)
+      });
+    } catch (e) {
+      console.warn('[/api/links] Error preparing debug log for incoming links:', e && e.message);
+    }
     
     // Parse with detailed error logging
     const parseResult = LinksPayloadSchema.safeParse(req.body);
