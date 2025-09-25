@@ -106,10 +106,10 @@ export const PublicTextCard = ({ link }: PublicTextCardProps) => {
             <ul className="text-sm leading-relaxed space-y-2 mb-3" style={link.textColor ? { color: link.textColor } : undefined}>
               {link.textItems.map((item, index) => (
                 <li key={index} className="flex">
-                  <span className="mr-2">•</span>
+                  <span className="mr-2" style={{ color: item.textColor || link.textColor }}>•</span>
                   <div className="flex-1 min-w-0">
                     {/* Label on its own line */}
-                    <div>{item.text}</div>
+                    <div style={{ color: item.textColor || link.textColor, fontSize: item.fontSize || undefined, fontFamily: item.fontFamily || link.descriptionFontFamily || undefined }}>{item.text}</div>
                     {/* URL on second indented line without wrapping */}
                     {item.url && (
                       <button
@@ -119,6 +119,7 @@ export const PublicTextCard = ({ link }: PublicTextCardProps) => {
                         }}
                         className="ml-6 block whitespace-nowrap overflow-x-auto hover:underline hover:text-primary transition-colors text-left"
                         title={item.url}
+                        style={{ color: item.textColor || link.textColor }}
                       >
                         {item.url}
                       </button>

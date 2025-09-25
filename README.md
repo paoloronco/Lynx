@@ -2,7 +2,7 @@
 
 ### Your personal links hub
 
-[![Version](https://img.shields.io/badge/version-3.3.1-blue.svg)](https://github.com/paoloronco/Lynx)
+[![Version](https://img.shields.io/badge/version-3.4.0-blue.svg)](https://github.com/paoloronco/Lynx)
 
 **Lynx** is an open-source, self-hosted link manager that helps you gather all your digital touchpoints in a single page, with secure authentication and a fully customizable design.
 
@@ -11,11 +11,11 @@
 # 📑 Table of Contents  
 
 1. [Lynx](#lynx)  
-   - [🧪 Demo](#-demo)  
+   - [🎥 Video](#-video)  
+   - [🧪 Demo](#-demo) 
    - [✨ Features](#-features)  
    - [🔒 Security Features](#-security-features)  
    - [🛠 Tech Stack](#-tech-stack)   
-   - [🎥 Video](#-video)  
 2. [🚀 Quick Start](#-quick-start)  
    - [1. Clone, Install & Run](#1-clone-install--run)  
    - [2. 🚀 Deploy on Railway](#2--deploy-on-railway)  
@@ -24,6 +24,12 @@
 4. [📌 To-Do / Next Steps](#-to-do--next-steps)  
 5. [👨‍💻 Developed With](#-developed-with)  
 6. [📜 License](#-license)  
+
+---
+## 🎥 Video
+
+#### Lynx Demo
+[![Watch the demo](./docs/demo.gif)](https://app.storylane.io/share/tjpm3tey6ven)
 
 ---
 
@@ -37,6 +43,7 @@
 
 ⚠️ The database resets automatically every 15 minutes.
 
+---
 
 ## ✨ Features
 
@@ -68,18 +75,11 @@
 
 ---
 
-## 🎥 Video
-
-#### Lynx Demo
-[![Watch the demo](./docs/demo.gif)](https://app.storylane.io/share/tjpm3tey6ven)
-
----
-
 ## 🚀 Quick Start
 
 Credentials:
   User: `admin`
-Password: `ChangeMe123!`
+  Password: `ChangeMe123!`
 
 ### 1. Clone, Install & Run
 
@@ -95,8 +95,8 @@ Password: `ChangeMe123!`
     npm run start
   ```
 
-<p> Public → http://localhost:5173
-<p> Admin → http://localhost:5173/admin
+<p> Public → http://localhost:3001
+<p> Admin → http://localhost:3001/admin
 
 ### 2. 🚀 Deploy on Railway
 
@@ -117,7 +117,7 @@ You can deploy **Lynx** on [Railway](https://railway.com) in a few steps:
 
 ### 3. 🚀 Other alternatives to deploy it:
 
-- [Render] (https://render.com/)
+- [Render](https://render.com/)
 - [DigitalOcean App Platform](https://www.digitalocean.com/products/app-platform)  
 - [Fly.io (Docker)](https://fly.io/docs/)  
 - [Heroku (Container)](https://devcenter.heroku.com/articles/container-registry-and-runtime)  
@@ -143,46 +143,38 @@ You can deploy **Lynx** on [Railway](https://railway.com) in a few steps:
 
 ## 📝 Changelog
 
-### v3.3.1
+### v3.4.0
 
 ### 🔧 Admin
-- Updated title to: “Lynx – Your personal links hub”
-- **Profile**
-  - Bio now supports **line breaks** (`whitespace-pre-line`)
+* Updated title to: “Lynx – Your personal links hub”
+* **Profile**
+ * Bio now supports **line breaks** (`whitespace-pre-line`)
   - Empty bio is automatically hidden (no blank space left)
   - Social links are hidden when empty
   - Profile picture now displays correctly
-- **Links**
+* **Links**
   - Consistent text color applied across title, description, and URL
   - Improved Text Card rendering: Link name on the first line, URL on the second line (with horizontal scroll for long URLs)
   - Added support for image/emoji next to links
+  - Added ability to insert either: 
+    * **Text Card** → full card with only text, entire card clickable via a single link
+    * **Bulleted List** → list with a title and multiple links underneath
   - Option to export/import links as JSON
   - Bug fixes in rendering icons, removing cards, and updating links
   - Fixed bugs with icons, card removal, and link updates
   - Extended customization: choose font, size, and alignment for links
-- **Theme**
+* **Theme**
   - Removed duplicate “Content” tab (was redundant with name + bio)
   - Partially removed Typography tab → now integrated into Links and Profile sections for better UX
   - Export/Import now properly saves and restores themes
-- **UI**
+* **UI**
   - Updated footer to:
     `Powered by Lynx | Lynx - Your personal links hub`
-
-
-### 🚀 Demo
-- Demo is fully functional, but **password change is disabled**
-
 
 ---
 ## 📌 To-Do / Next Steps
 
 ### 🔧 Admin
-- **Links**
-  - Bug fix: links fonts personalization (font type, dimensions, alignment) 
-  - Bug fix: Ability to center text and customize its alignment within cards
-- **Themes**
-  - Further improvements to theme usability and customization
-  - Enhanced personalization options for layouts, colors, and styles
 - **Code**
   - Code cleaning & refactoring: removing unnecessary parts, obsolete code, and unused dependencies (e.g., leftover Supabase or Firebase integrations).
 

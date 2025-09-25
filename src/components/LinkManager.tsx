@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Plus, Link, Type, Upload, Download } from "lucide-react";
+import { Plus, Link, List, Type, Upload, Download } from "lucide-react";
 import { LinkCard, LinkData } from "./LinkCard";
 import { TextCard } from "./TextCard";
 import { useToast } from "@/components/ui/use-toast";
@@ -52,6 +52,21 @@ export const LinkManager = ({ links, onLinksUpdate }: LinkManagerProps) => {
       content: "",
     };
     const updated = [...workingLinks, newTextCard];
+    setWorkingLinks(updated);
+    setIsDirty(true);
+  };
+
+  // Create a bulleted list text card (clickable list items)
+  const addNewBulletedList = () => {
+    const newListCard: LinkData = {
+      id: Date.now().toString(),
+      title: "New list",
+      description: "",
+      url: "",
+      type: "text",
+      textItems: [],
+    };
+    const updated = [...workingLinks, newListCard];
     setWorkingLinks(updated);
     setIsDirty(true);
   };
@@ -215,9 +230,8 @@ export const LinkManager = ({ links, onLinksUpdate }: LinkManagerProps) => {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h2 className="text-xl font-semibold text-foreground">Your Content</h2>
-        <div className="flex gap-2">
+      <div className="flex flex-col gap-2">
+  <div className="flex gap-2 justify-center flex-wrap">
           <Button 
             onClick={addNewLink}
             variant="gradient"
@@ -227,13 +241,23 @@ export const LinkManager = ({ links, onLinksUpdate }: LinkManagerProps) => {
             Add Link
           </Button>
           <Button 
+            onClick={addNewBulletedList}
+            variant="outline"
+            className="gap-2"
+          >
+            <List className="w-4 h-4" />
+            Add bulled list
+          </Button>
+          <Button 
             onClick={addNewTextCard}
             variant="outline"
             className="gap-2"
           >
             <Type className="w-4 h-4" />
-            Add Text
+            Add Text Card
           </Button>
+        </div>
+  <div className="flex gap-2 justify-center flex-wrap">
           <Button onClick={handleSave} variant="default" className="gap-2" disabled={!isDirty || busy}>
             Save
           </Button>
@@ -261,9 +285,13 @@ export const LinkManager = ({ links, onLinksUpdate }: LinkManagerProps) => {
                   <Link className="w-4 h-4 mr-2" />
                   Add Link
                 </Button>
+                <Button onClick={addNewBulletedList} variant="outline">
+                  <List className="w-4 h-4 mr-2" />
+                  Add bulled list
+                </Button>
                 <Button onClick={addNewTextCard} variant="outline">
                   <Type className="w-4 h-4 mr-2" />
-                  Add Text
+                  Add Text Card
                 </Button>
               </div>
             </div>

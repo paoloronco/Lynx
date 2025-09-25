@@ -1,7 +1,7 @@
 import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
+// removed large Textarea editor to keep the card compact
 import { Card } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
@@ -212,20 +212,34 @@ export const TextCard = ({ link, onUpdate, onDelete, isDragging, onMoveUp, onMov
                 </Button>
               </div>
               {editLink.textItems?.map((item: any, index) => (
-                <div key={index} className="flex gap-2 items-center">
-                  <Input
-                    value={item.text}
-                    onChange={(e) => updateTextItem(index, 'text', e.target.value)}
-                    placeholder="List item text"
-                    className="glass-card border-primary/20 bg-white text-black dark:bg-gray-800 dark:text-white flex-1"
-                  />
-                  <Input
-                    value={item.url || ''}
-                    onChange={(e) => updateTextItem(index, 'url', e.target.value)}
-                    placeholder="https://example.com"
-                    className="glass-card border-primary/20 bg-white text-black dark:bg-gray-800 dark:text-white flex-1"
-                  />
-                  <div className="flex gap-1 items-center">
+                <div key={index} className="bg-white/5 dark:bg-white/3 rounded-lg p-3 mb-3 border border-white/5">
+                  <div className="flex items-center justify-between gap-2">
+                    <Input
+                      value={item.text}
+                      onChange={(e) => updateTextItem(index, 'text', e.target.value)}
+                      placeholder="List item text"
+                      className="bg-white text-black dark:bg-gray-800 dark:text-white flex-1 rounded-md"
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => removeTextItem(index)}
+                      className="w-8 h-8 text-destructive"
+                      title="Remove item"
+                    >
+                      <X className="w-3 h-3" />
+                    </Button>
+                  </div>
+                  <div className="mt-2">
+                    <Input
+                      value={item.url || ''}
+                      onChange={(e) => updateTextItem(index, 'url', e.target.value)}
+                      placeholder="https://example.com"
+                      className="bg-white text-black dark:bg-gray-800 dark:text-white w-full rounded-md"
+                    />
+                  </div>
+                  <div className="flex items-center gap-2 mt-2">
                     <Input
                       type="color"
                       value={item.textColor || '#000000'}
@@ -236,20 +250,23 @@ export const TextCard = ({ link, onUpdate, onDelete, isDragging, onMoveUp, onMov
                           textItems: prev.textItems?.map((it, i) => i === index ? { ...it, textColor: v } : it) || []
                         }));
                       }}
-                      className="w-10 h-8 p-0"
+                      className="w-10 h-8 p-0 rounded-md"
                     />
-                    <Input
-                      type="number"
-                      value={parseInt(item.fontSize || '14', 10)}
-                      onChange={(e) => {
-                        const v = `${e.target.value}px`;
-                        setEditLink(prev => ({
-                          ...prev,
-                          textItems: prev.textItems?.map((it, i) => i === index ? { ...it, fontSize: v } : it) || []
-                        }));
-                      }}
-                      className="w-20 h-8"
-                    />
+                    <div className="w-20">
+                      <Input
+                        type="number"
+                        value={parseInt(item.fontSize || '14', 10)}
+                        onChange={(e) => {
+                          const v = `${e.target.value}px`;
+                          setEditLink(prev => ({
+                            ...prev,
+                            textItems: prev.textItems?.map((it, i) => i === index ? { ...it, fontSize: v } : it) || []
+                          }));
+                        }}
+                        className="h-8 rounded-md"
+                      />
+                    </div>
+                    <div className="flex-1">
                       <Select
                         value={item.fontFamily || 'Inter, system-ui, sans-serif'}
                         onValueChange={(value: string) => {
@@ -259,7 +276,7 @@ export const TextCard = ({ link, onUpdate, onDelete, isDragging, onMoveUp, onMov
                           }));
                         }}
                       >
-                        <SelectTrigger className="h-8 w-36 bg-white text-black">
+                        <SelectTrigger className="h-8 w-full bg-white text-black rounded-md">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
@@ -271,27 +288,13 @@ export const TextCard = ({ link, onUpdate, onDelete, isDragging, onMoveUp, onMov
                           <SelectItem value={"Verdana, Geneva, sans-serif"}>Verdana</SelectItem>
                         </SelectContent>
                       </Select>
+                    </div>
                   </div>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => removeTextItem(index)}
-                    className="w-8 h-8 text-destructive"
-                  >
-                    <X className="w-3 h-3" />
-                  </Button>
                 </div>
               ))}
             </div>
             
-            <Textarea
-              value={editLink.content || ''}
-              onChange={(e) => setEditLink(prev => ({ ...prev, content: e.target.value }))}
-              placeholder="Additional text content (optional)&#10;&#10;Tips:&#10;• Use * or - for bullet points&#10;• Use 1. 2. 3. for numbered lists&#10;• Use line breaks for paragraphs"
-              className="glass-card border-primary/20 bg-white text-black dark:bg-gray-800 dark:text-white resize-none"
-              rows={4}
-            />
+            {/* Removed large free-text editor to keep UI compact; use clickable list items instead */}
             <Input
               value={editLink.url}
               onChange={(e) => setEditLink(prev => ({ ...prev, url: e.target.value }))}
@@ -400,37 +403,31 @@ export const TextCard = ({ link, onUpdate, onDelete, isDragging, onMoveUp, onMov
               {link.textItems && link.textItems.length > 0 && (
                 <ul className="text-sm leading-relaxed space-y-2 mb-3" style={{ textAlign: link.alignment as any }}>
                   {link.textItems.map((item: any, index) => (
-                    <li key={index} className="flex">
-                      <span className="mr-2">•</span>
+                    <li key={index} className="flex items-start">
+                      <span className="mr-2 mt-1 text-lg" style={{ color: item.textColor || link.textColor }}>•</span>
                       <div className="flex-1 min-w-0">
                         {/* Name/label on its own line */}
-                        <div style={{ color: item.textColor || link.textColor, fontSize: item.fontSize || undefined, fontFamily: item.fontFamily || link.descriptionFontFamily || undefined }}>{item.text}</div>
-                        {/* Link on a second indented line, no wrap, horizontal scroll if too long */}
+                        <div className="break-words" style={{ color: item.textColor || link.textColor, fontSize: item.fontSize || undefined, fontFamily: item.fontFamily || link.descriptionFontFamily || undefined }}>{item.text}</div>
+                        {/* Link on a second indented line, wrap and ellipsize if too long */}
                         {item.url && (
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              window.open(item.url!, '_blank');
-                            }}
-                            className="ml-6 block whitespace-nowrap overflow-x-auto no-scrollbar hover:underline hover:text-primary transition-colors text-left"
-                            style={{ color: link.textColor }}
+                          <a
+                            onClick={(e) => { e.stopPropagation(); }}
+                            href={item.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="ml-6 block truncate hover:underline hover:text-primary transition-colors text-left"
+                            style={{ color: item.textColor || link.textColor }}
                             title={item.url}
                           >
                             {item.url}
-                          </button>
+                          </a>
                         )}
                       </div>
                     </li>
                   ))}
                 </ul>
               )}
-              {link.content && (
-                <div 
-                  className="text-sm leading-relaxed"
-                  style={{ color: link.textColor }}
-                  dangerouslySetInnerHTML={{ __html: formatContent(link.content) }}
-                />
-              )}
+              {/* Note: long free-text content rendering removed to improve layout */}
             </div>
             
             <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-smooth" onClick={(e) => e.stopPropagation()}>
