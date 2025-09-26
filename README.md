@@ -18,8 +18,9 @@
    - [🛠 Tech Stack](#-tech-stack)   
 2. [🚀 Quick Start](#-quick-start)  
    - [1. Clone, Install & Run](#1-clone-install--run)  
-   - [2. 🚀 Deploy on Railway](#2--deploy-on-railway)  
-   - [3. 🚀 Other alternatives to deploy it](#3--other-alteratives-to-deploy-it)  
+   - [2. 🚀 Deploy with Docker](#2--deploy-with-docker)  
+   - [3. 🚀 Deploy on Railway](#2--deploy-on-railway)  
+   - [4. 🚀 Other alternatives to deploy it](#3--other-alteratives-to-deploy-it)  
 3. [📝 Changelog](#-changelog)  
 4. [📌 To-Do / Next Steps](#-to-do--next-steps)  
 5. [👨‍💻 Developed With](#-developed-with)  
@@ -93,10 +94,50 @@ Credentials:
     npm run start
   ```
 
-<p> Public → http://localhost:3001
-<p> Admin → http://localhost:3001/admin
+> Public → http://localhost:3001
 
-### 2. 🚀 Deploy on Railway
+> Admin → http://localhost:3001/admin
+
+### 2. 🚀 Deploy with Docker
+
+You can run **Lynx** directly using the pre-built image from [Docker Hub](https://hub.docker.com/r/paueron/lynx).
+
+1. Pull the image
+    ```bash
+    docker pull paueron/lynx:latest
+    ```
+2. Start the container
+    ```bash
+    docker run -d --name lynx \
+      -p 8080:8080 \
+      -e NODE_ENV=production \
+      -e PORT=8080 \
+      paueron/lynx:latest
+    ```
+    Once started, the app will be available at:
+    > 👉 http://localhost:8080
+
+    > 👉 http://localhost:8080/admin
+
+3. Optional environment variables
+    - JWT_SECRET – secret key used to sign JWT tokens. If not set, a random key will be generated at runtime (⚠️ highly recommended to set this in production).
+
+    - PORT – the internal server port (default: 8080).
+
+    - NODE_ENV – Node.js environment (default: production).
+
+4. Data persistence (recommended)
+    ```bash
+    docker run -d --name lynx \
+      -p 8080:8080 \
+      -e NODE_ENV=production \
+      -e PORT=8080 \
+      -e JWT_SECRET="your-very-secret-key" \
+      -v lynx_data:/app/server \
+      paueron/lynx:latest
+    ```
+
+### 3. 🚀 Deploy on Railway
 
 You can deploy **Lynx** on [Railway](https://railway.com) in a few steps:
 1. Go to **Railway Dashboard** → New → **GitHub Repo**
@@ -113,7 +154,7 @@ You can deploy **Lynx** on [Railway](https://railway.com) in a few steps:
 4. Click **Create** and wait for the deployment ✨
 5. Add a public domain in the settings 
 
-### 3. 🚀 Other alternatives to deploy it:
+### 4. 🚀 Other alternatives to deploy it:
 
 - [Render](https://render.com/)
 - [DigitalOcean App Platform](https://www.digitalocean.com/products/app-platform)  
