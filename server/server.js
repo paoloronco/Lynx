@@ -1,4 +1,5 @@
 import express from 'express';
+import https from 'https';
 import cors from 'cors';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
@@ -40,6 +41,8 @@ function safeJsonParse(jsonString, defaultValue = {}) {
 
 const app = express();
 const PORT = process.env.PORT || 3001;
+const ENABLE_HTTPS = String(process.env.ENABLE_HTTPS || '').toLowerCase() === 'true' || process.env.ENABLE_HTTPS === '1';
+const SSL_PORT = Number.parseInt(process.env.SSL_PORT || '', 10) || 8443;
 const FRONTEND_URL = process.env.FRONTEND_URL || `http://localhost:${PORT}`;
 const COOKIE_SECRET = process.env.COOKIE_SECRET || 'dev-cookie-secret';
 
@@ -1162,8 +1165,8 @@ app.get('*', spaLimiter, (req, res) => {
   res.sendFile(join(__dirname, '../dist/index.html'));
 });
 
-app.listen(PORT, '0.0.0.0', () => {
-  console.log(`Server running on port ${PORT}`);
+app.listen(PORT, '0.0.0.0', async () => {
+  console.log(`HTTP server running on port ${PORT}`);
   console.log(`Frontend: http://localhost:${PORT}`);
   console.log(`API: http://localhost:${PORT}/api`);
   console.log('Rate limiting active:');
@@ -1172,4 +1175,31 @@ app.listen(PORT, '0.0.0.0', () => {
   console.log('- Login attempts: 5 failed/10min per IP');
   console.log('- Force reset: 2 requests/hour per IP');
   console.log('Trust proxy:', app.get('trust proxy') ? 'Enabled' : 'Disabled');
+
+  if (ENABLE_HTTPS) {
+    try {
+      const mod = await import('selfsigned');
+      const selfsigned = mod.default || mod;
+      const attrs = [{ name: 'commonName', value: 'localhost' }];
+      const pems = selfsigned.generate(attrs, {
+        days: 7,
+        keySize: 2048,
+        algorithm: 'sha256'
+      });
+
+      const httpsServer = https.createServer({ key: pems.private, cert: pems.cert }, app);
+      httpsServer.listen(SSL_PORT, '0.0.0.0', () => {
+        console.log(`HTTPS server running on port ${SSL_PORT}`);
+        console.log('HTTPS: Enabled (self-signed certificate)');
+      });
+      httpsServer.on('error', (err) => {
+        console.error('HTTPS server error:', err?.message || err);
+      });
+    } catch (err) {
+      console.error('Failed to start HTTPS server (self-signed):', err?.message || err);
+      console.log('HTTPS: Disabled due to error');
+    }
+  } else {
+    console.log('HTTPS: Disabled');
+  }
 });
