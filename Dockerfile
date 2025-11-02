@@ -15,7 +15,8 @@ RUN npm run build
 
 # Install production deps for server
 WORKDIR /app/server
-RUN npm ci --omit=dev
+# Prefer reproducible installs; fall back to npm install when lockfile changes
+RUN npm ci --omit=dev || npm install --omit=dev
 
 # ---------- STAGE 2: runtime ----------
 FROM node:20-alpine
@@ -28,7 +29,7 @@ ENV PORT=8080
 COPY --from=builder /app/dist    /app/dist
 COPY --from=builder /app/server  /app/server
 
-EXPOSE 8080
+EXPOSE 8080 8443
 
 # Copy and enable entrypoint
 COPY docker-entrypoint.sh /app/server/docker-entrypoint.sh

@@ -55,6 +55,7 @@
 * 📱 Mobile-First → responsive design that looks great on any device.
 * 🗄 Standalone by Design → lightweight, no Firebase/Supabase required.
 * ⚡ Fast & Modern → built with Vite, React, and Tailwind CSS.
+* 🔒 **Built-in HTTPS support** → enable automatic SSL (self-signed) by setting `ENABLE_HTTPS=true`, runs alongside HTTP on port `8443`.
 
 ### 🔒 Security Features
 
@@ -96,6 +97,8 @@ Credentials:
 > Public → http://localhost:3001
 
 > Admin → http://localhost:3001/admin
+HTTPS (optional) → https://localhost:8443
+ (requires ENABLE_HTTPS=true)
 </details>
 
 
@@ -112,9 +115,11 @@ You can run **Lynx** directly using the pre-built image from [Docker Hub](https:
     ```bash
     docker run -d --name lynx \
       -p 8080:8080 \
+      -p 8443:8443 \
       -e NODE_ENV=production \
       -e PORT=8080 \
       -e JWT_SECRET="your-very-secret-key" \
+      -e ENABLE_HTTPS=true \
       -v lynx_data:/app/server \
       paueron/lynx:latest
     ```
@@ -122,7 +127,9 @@ You can run **Lynx** directly using the pre-built image from [Docker Hub](https:
     If it’s missing, startup will fail with an error message to prevent insecure sessions.
 
     Once started, the app will be available at:
-    > 👉 http://localhost:8080
+    > 🌐 HTTP → http://localhost:8080
+    > 🔒 HTTPS → https://localhost:8443
+      (self-signed certificate)
 
     > 👉 http://localhost:8080/admin
 
@@ -149,8 +156,15 @@ You can deploy **Lynx** on [Railway](https://railway.com) in a few steps:
      ```bash
      npm run start
      ```
-4. Click **Create** and wait for the deployment ✨
-5. Add a public domain in the settings 
+4. Add environment variables:
+     ```bash
+    NODE_ENV=production
+    PORT=8080
+    JWT_SECRET=your-very-secret-key
+    ENABLE_HTTPS=true
+    ```
+5. Click **Create** and wait for the deployment ✨
+6. Add a public domain in the settings 
 
 </details>
 
@@ -221,6 +235,8 @@ You can deploy **Lynx** on [Railway](https://railway.com) in a few steps:
     ```bash
     docker run -d -p 8080:8080 -e JWT_SECRET="your-strong-random-secret" paueron/lynx:latest
     ```
+  - **Built-in HTTPS support** → enable automatic SSL (self-signed) by setting `ENABLE_HTTPS=true`, runs alongside HTTP on port `8443`.
+  
 ---
 ## 📌 To-Do / Next Steps
 
