@@ -2,7 +2,7 @@
 
 ### Your personal links hub
 
-[![Version](https://img.shields.io/badge/version-3.4.0-blue.svg)](https://github.com/paoloronco/Lynx)
+[![Version](https://img.shields.io/badge/version-3.5.0-blue.svg)](https://github.com/paoloronco/Lynx)
 
 **Lynx** is an open-source, self-hosted link manager that helps you gather all your digital touchpoints in a single page, with secure authentication and a fully customizable design.
 
@@ -32,15 +32,13 @@
 #### Lynx Demo
 [![Watch the demo](./docs/demo.gif)](https://app.storylane.io/share/tjpm3tey6ven)
 
----
-
 ## 🧪 Demo
 
-- 🌐 [Try Lynx Demo on Railway] [https://lynx-demo.paoloronco.it](https://lynx-demo.paoloronco.it/)]
+- 🌐 [Try Lynx Demo on CloudRun] [https://lynx-demo.paoloronco.it](https://lynx-demo.paoloronco.it/)]
 - **Admin Panel**: [[https://lynx-demo.paoloronco.it/admin](https://lynx-demo.paoloronco.it/admin)]
 - **Login**:  
   - User: `admin`  
-  - Password: `demo123` (the password can't be changed)
+  - Password: `ChangeMe123!` (the password can't be changed)
 
 ⚠️ The database resets automatically every 15 minutes.
 
@@ -80,9 +78,10 @@ Credentials:
   User: `admin`
   Password: `ChangeMe123!`
 
-### 1. Clone, Install & Run
+<details>
+  <summary><h3>1. Clone, Install & Run(click to expand)</h3></summary>
 
-*(prerequisite: Node.js 18+)*
+  *(prerequisite: Node.js 18+)*
   ```bash
     git clone https://github.com/paoloronco/Lynx.git
     cd Lynx
@@ -97,8 +96,11 @@ Credentials:
 > Public → http://localhost:3001
 
 > Admin → http://localhost:3001/admin
+</details>
 
-### 2. 🚀 Deploy with Docker
+
+<details>
+  <summary><h3>2. 🚀 Deploy with Docker</h3></summary>
 
 You can run **Lynx** directly using the pre-built image from [Docker Hub](https://hub.docker.com/r/paueron/lynx).
 
@@ -112,8 +114,13 @@ You can run **Lynx** directly using the pre-built image from [Docker Hub](https:
       -p 8080:8080 \
       -e NODE_ENV=production \
       -e PORT=8080 \
+      -e JWT_SECRET="your-very-secret-key" \
+      -v lynx_data:/app/server \
       paueron/lynx:latest
     ```
+    > ⚠️ Since version v3.5.0, the container requires a JWT_SECRET to start.
+    If it’s missing, startup will fail with an error message to prevent insecure sessions.
+
     Once started, the app will be available at:
     > 👉 http://localhost:8080
 
@@ -125,19 +132,10 @@ You can run **Lynx** directly using the pre-built image from [Docker Hub](https:
     - PORT – the internal server port (default: 8080).
 
     - NODE_ENV – Node.js environment (default: production).
+</details>
 
-4. Data persistence (recommended)
-    ```bash
-    docker run -d --name lynx \
-      -p 8080:8080 \
-      -e NODE_ENV=production \
-      -e PORT=8080 \
-      -e JWT_SECRET="your-very-secret-key" \
-      -v lynx_data:/app/server \
-      paueron/lynx:latest
-    ```
-
-### 3. 🚀 Deploy on Railway
+<details>
+  <summary><h3>2. 🚀 Deploy on Railway</h3></summary>
 
 You can deploy **Lynx** on [Railway](https://railway.com) in a few steps:
 1. Go to **Railway Dashboard** → New → **GitHub Repo**
@@ -154,7 +152,11 @@ You can deploy **Lynx** on [Railway](https://railway.com) in a few steps:
 4. Click **Create** and wait for the deployment ✨
 5. Add a public domain in the settings 
 
-### 4. 🚀 Other alternatives to deploy it:
+</details>
+
+<details>
+  <summary><h3>4. 🚀 Other alternatives to deploy it:</h3></summary>
+
 
 - [Render](https://render.com/)
 - [DigitalOcean App Platform](https://www.digitalocean.com/products/app-platform)  
@@ -177,12 +179,13 @@ You can deploy **Lynx** on [Railway](https://railway.com) in a few steps:
 - [Stormkit](https://stormkit.io/docs)  
 - [Appwrite (Functions/Containers)](https://appwrite.io/docs)  
 - [Supabase (Edge Functions)](https://supabase.com/docs/guides/functions)  
+</details>
 
 ---
 
 ## 📝 Changelog
 
-### v4.0.0
+### v3.5.0
 
 ### 🔧 Admin
 * Updated title to: “Lynx – Your personal links hub”
@@ -210,7 +213,14 @@ You can deploy **Lynx** on [Railway](https://railway.com) in a few steps:
   - Updated footer to:
     `Powered by Lynx | Lynx - Your personal links hub`
   - Possibility to change the `title` and `meta description`
-
+* **Docker / Deployment**
+  - Added startup check for JWT_SECRET:
+    the container will now fail to start if the environment variable JWT_SECRET is missing.
+    This ensures proper JWT token signing and prevents session invalidation on restart.
+    Example usage:
+    ```bash
+    docker run -d -p 8080:8080 -e JWT_SECRET="your-strong-random-secret" paueron/lynx:latest
+    ```
 ---
 ## 📌 To-Do / Next Steps
 

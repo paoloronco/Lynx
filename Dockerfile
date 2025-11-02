@@ -27,6 +27,12 @@ COPY --from=builder /app/server  /app/server
 # Il server ha già le sue dipendenze in /app/server/node_modules
 EXPOSE 8080
 
-# Avvia direttamente il server (che ascolta su 8080)
+# Copia l'entrypoint e assicurati che sia eseguibile e con LF
+COPY docker-entrypoint.sh /app/server/docker-entrypoint.sh
+RUN sed -i 's/\r$//' /app/server/docker-entrypoint.sh \
+	&& chmod +x /app/server/docker-entrypoint.sh
+
+# Avvia tramite entrypoint che verifica JWT_SECRET
 WORKDIR /app/server
-CMD ["npm","start"]
+ENTRYPOINT ["./docker-entrypoint.sh"]
+CMD ["node","server.js"]
