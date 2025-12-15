@@ -1,37 +1,47 @@
-# ---------- STAGE 1: build frontend + install server deps ----------
-FROM node:20-alpine AS builder
+# ---------- STAGE 1: build (frontend + server deps) ----------
+FROM node:20-bookworm-slim AS builder
 
-# Se usi sqlite3 (native), servono tool di build in builder
-RUN apk add --no-cache python3 make g++ sqlite
+# Tool necessari per dipendenze native (es. sqlite3) + cert
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends \
+    python3 make g++ \
+    ca-certificates \
+ && rm -rf /var/lib/apt/lists/*
 
-# --- Frontend (in /LYNX) ---
+# --- Frontend (cartella: /LYNX) ---
 WORKDIR /app/LYNX
 COPY LYNX/package*.json ./
 RUN npm ci
 COPY LYNX/ ./
 RUN npm run build
 
-# --- Server (in /LYNX/server) ---
+# --- Server (cartella: /LYNX/server) ---
 WORKDIR /app/LYNX/server
 COPY LYNX/server/package*.json ./
 RUN npm ci --omit=dev
 COPY LYNX/server/ ./
 
 # ---------- STAGE 2: runtime ----------
-FROM node:20-alpine
+FROM node:20-bookworm-slim
 
-# runtime deps (sqlite client lib)
-RUN apk add --no-cache sqlite
+# sqlite runtime + cert
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends \
+    sqlite3 \
+    ca-certificates \
+ && rm -rf /var/lib/apt/lists/*
 
-# Copio build frontend + server (con node_modules già pronti)
 WORKDIR /app
+
+# Copia build frontend (Vite -> dist) e server già pronto con node_modules
 COPY --from=builder /app/LYNX/dist /app/dist
 COPY --from=builder /app/LYNX/server /app/server
 
 # entrypoint (quello che controlla JWT_SECRET)
 COPY docker-entrypoint.sh /app/server/docker-entrypoint.sh
-RUN sed -i 's/\r$//' /app/server/docker-entrypoint.sh && chmod +x /app/server/docker-entrypoint.sh
+RUN chmod +x /app/server/docker-entrypoint.sh
 
+# Porta/e usate dal tuo stack (lasciamo entrambe)
 EXPOSE 8080 8443
 
 WORKDIR /app/server
