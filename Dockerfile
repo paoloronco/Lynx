@@ -1,40 +1,38 @@
-# ---------- STAGE 1: build ----------
+# ---------- STAGE 1: build frontend + install server deps ----------
 FROM node:20-alpine AS builder
-WORKDIR /app
 
-# Install build tools for sqlite3 and native modules
+# Se usi sqlite3 (native), servono tool di build in builder
 RUN apk add --no-cache python3 make g++ sqlite
 
-# Dev deps for building frontend
-COPY package*.json ./
+# --- Frontend (in /LYNX) ---
+WORKDIR /app/LYNX
+COPY LYNX/package*.json ./
 RUN npm ci
-
-# Copy source and build frontend
-COPY . .
+COPY LYNX/ ./
 RUN npm run build
 
-# Install production deps for server
-WORKDIR /app/server
-# Prefer reproducible installs; fall back to npm install when lockfile changes
-RUN npm ci --omit=dev || npm install --omit=dev
+# --- Server (in /LYNX/server) ---
+WORKDIR /app/LYNX/server
+COPY LYNX/server/package*.json ./
+RUN npm ci --omit=dev
+COPY LYNX/server/ ./
 
 # ---------- STAGE 2: runtime ----------
 FROM node:20-alpine
+
+# runtime deps (sqlite client lib)
+RUN apk add --no-cache sqlite
+
+# Copio build frontend + server (con node_modules già pronti)
 WORKDIR /app
+COPY --from=builder /app/LYNX/dist /app/dist
+COPY --from=builder /app/LYNX/server /app/server
 
-ENV NODE_ENV=production
-ENV PORT=8080
-
-# Copy built frontend and server
-COPY --from=builder /app/dist    /app/dist
-COPY --from=builder /app/server  /app/server
+# entrypoint (quello che controlla JWT_SECRET)
+COPY docker-entrypoint.sh /app/server/docker-entrypoint.sh
+RUN sed -i 's/\r$//' /app/server/docker-entrypoint.sh && chmod +x /app/server/docker-entrypoint.sh
 
 EXPOSE 8080 8443
-
-# Copy and enable entrypoint
-COPY docker-entrypoint.sh /app/server/docker-entrypoint.sh
-RUN sed -i 's/\r$//' /app/server/docker-entrypoint.sh \
-  && chmod +x /app/server/docker-entrypoint.sh
 
 WORKDIR /app/server
 ENTRYPOINT ["./docker-entrypoint.sh"]
