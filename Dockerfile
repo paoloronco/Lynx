@@ -6,6 +6,7 @@ RUN apt-get update \
  && apt-get install -y --no-install-recommends \
     python3 make g++ \
     ca-certificates \
+ && apt-get upgrade -y --no-install-recommends \
  && rm -rf /var/lib/apt/lists/*
 
 # --- Frontend (cartella: /LYNX) ---
@@ -19,7 +20,8 @@ RUN npm run build
 WORKDIR /app/LYNX/server
 COPY LYNX/server/package*.json ./
 RUN npm ci --omit=dev
-COPY LYNX/server/ ./
+# Copy server source files only (not node_modules or .db files)
+COPY LYNX/server/*.js ./
 
 # ---------- STAGE 2: runtime ----------
 FROM node:20-bookworm-slim
@@ -29,6 +31,7 @@ RUN apt-get update \
  && apt-get install -y --no-install-recommends \
     sqlite3 \
     ca-certificates \
+ && apt-get upgrade -y --no-install-recommends \
  && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
@@ -40,6 +43,9 @@ COPY --from=builder /app/LYNX/server /app/server
 # entrypoint (quello che controlla JWT_SECRET)
 COPY docker-entrypoint.sh /app/server/docker-entrypoint.sh
 RUN chmod +x /app/server/docker-entrypoint.sh
+
+# Set default PORT environment variable
+ENV PORT=8080
 
 # Porta/e usate dal tuo stack (lasciamo entrambe)
 EXPOSE 8080 8443

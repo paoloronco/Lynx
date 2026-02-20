@@ -1,0 +1,44 @@
+# Claude Code local directory
+.claude/
+
+# Dependencies (but keep package-lock.json for reproducible builds)
+node_modules/
+**/node_modules/
+npm-debug.log*
+
+# Build artifacts
+dist/
+build/
+.vite/
+
+# Database files
+*.db
+*.db-shm
+*.db-wal
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Git
+.git/
+.gitignore
+
+# Uploads (will be created at runtime)
+uploads/
+
+# Logs
+logs/
+*.log
