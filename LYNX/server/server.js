@@ -2,7 +2,7 @@ import express from 'express';
 import https from 'https';
 import cors from 'cors';
 import { fileURLToPath } from 'url';
-import { dirname, join } from 'path';
+import path, { dirname, join } from 'path';
 import fs from 'fs';
 import bcrypt from 'bcryptjs';
 import { initializeDatabase, dbGet, dbAll, dbRun, withTransaction } from './database.js';
@@ -1209,12 +1209,11 @@ const spaLimiter = rateLimit({
 // Configure multer for file uploads
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
-    const uploadDir = join(__dirname, 'uploads');
     // Create uploads directory if it doesn't exist
-    if (!fs.existsSync(uploadDir)) {
-      fs.mkdirSync(uploadDir, { recursive: true });
+    if (!fs.existsSync(uploadsPath)) {
+      fs.mkdirSync(uploadsPath, { recursive: true });
     }
-    cb(null, uploadDir);
+    cb(null, uploadsPath);
   },
   filename: function (req, file, cb) {
     // Generate unique filename with original extension
@@ -1340,6 +1339,9 @@ app.get('*', spaLimiter, (req, res) => {
   serveSpaIndex(req, res);
 });
 
+export { app };
+
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
 app.listen(PORT, '0.0.0.0', async () => {
   console.log(`HTTP server running on port ${PORT}`);
   if (IS_PRODUCTION) {
@@ -1383,3 +1385,4 @@ app.listen(PORT, '0.0.0.0', async () => {
     console.log('HTTPS: Disabled');
   }
 });
+}
